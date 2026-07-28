@@ -1,224 +1,173 @@
-# 🔐 ThreatLens
-> AI-Powered Security Copilot for Early-Stage Founders
+# 🔐 ThreatLens — AI Security Copilot for Founders
 
-Rebuilt for **Build with Gemini XPRIZE** — Category: **Entrepreneurship & Job Creation**
+> **Build with Gemini XPRIZE Submission** — Category: **Entrepreneurship & Job Creation**
 
-ThreatLens is a conversational security intelligence agent that lets a founder or
-small engineering team ask plain-English questions about their security logs —
-"what's critical right now," "check this IP," "what do I do about the
-ransomware" — and get back real answers, computed live against MongoDB Atlas by
-a Google Gemini agent that decides which tool to call.
+ThreatLens is an AI-powered conversational security copilot built for founders and engineering teams. It continuously monitors security logs, translates complex telemetry into plain English, and provides 1-click incident mitigation — powered by **Google Gemini API** and **MongoDB Atlas Vector Search**.
 
 ---
 
-## Why this fits "Entrepreneurship & Job Creation"
+## 🌟 Key Features & Capabilities
 
-Security tooling is usually priced and staffed for enterprises: a SOC analyst,
-a SIEM license, a security engineer hire. Early-stage founders and small teams
-building the next generation of startups typically have none of that, and a
-single unhandled breach can end a company before it creates a single job.
+- **✨ Bring Your Own Gemini API Key (BYOK)**: Connect your own Google Gemini API key directly from Google AI Studio (`✨ Gemini Access`) to get un-throttled, live Gemini 1.5 Pro responses.
+- **🛡️ 1-Click Incident Mitigation**: Instantly block malicious IPs and isolate infected host endpoints directly from the threat drawer.
+- **⚡ Tier Advantage Matrix**: Tier-gated feature advantages comparing **Solo Founder ($0)**, **Early Team ($49/mo)**, and **Scaling Up ($199/mo)**.
+- **🎨 Glassmorphic Cyber SOC UI**: Deep Obsidian aesthetic with ambient mesh glows, typography powered by `Outfit` and `JetBrains Mono`, and an animated 360° laser threat radar.
+- **🏷️ MITRE ATT&CK Framework Mapping**: Automatic tactic & technique categorization (e.g., *T1486 Data Encrypted for Impact*, *T1110.001 Password Guessing*).
+- **👑 SOC2 Evidence CSV Audit Export**: Download complete structured CSV audit trails of every agent tool call executed for compliance evidence.
+- **💬 Real-Time Slack Alerting**: Automated webhook alerts fired to Slack when high or critical threats are detected.
 
-ThreatLens's business is to be the security hire a pre-seed/seed-stage founder
-can't yet afford: an AI operator that watches logs, triages threats, and tells
-a non-security founder exactly what to do next, so they can keep hiring
-engineers instead of firebreaks. The product itself is a small business —
-it needs real paying customers (other founders and small dev teams) to prove
-the model, which is the "operate a business with AI" requirement of the
-Hackathon.
+---
 
-**This repository is the product.** It is not, by itself, evidence of a
-business — the Hackathon separately requires you to show real revenue, real
-users, and real usage logs (see `SUBMISSION_CHECKLIST.md`). Those have to come
-from you actually running ThreatLens as a business during the Submission
-Period; no one can generate that evidence on your behalf, and fabricating it
-would violate the Official Rules' "Related-Party Revenue" and "user evidence"
-requirements.
+## 🚀 Why This Fits "Entrepreneurship & Job Creation"
 
-## Google Cloud Platform usage (Platform requirement)
+Early-stage startups cannot afford a dedicated SOC analyst ($150k+/year) or enterprise SIEM licenses. A single unmitigated breach can shut down a startup before it creates its first job. 
 
-| Product | Role |
-|---|---|
-| **Gemini API** | Required LLM call — every chat turn and every tool-routing decision runs through `gemini-2.0-flash-001` via `backend/genaiClient.js` |
-| **Vertex AI text-embedding-004** | Powers `semantic_search` (vector embeddings for fuzzy log queries) |
-| **Cloud Run** | Hosts the Express backend (`backend/Dockerfile`) |
-| **Firebase Hosting** | Hosts the React frontend |
+ThreatLens serves as an AI security partner for pre-seed and seed-stage founders — allowing small teams to focus on hiring engineers and scaling their core product while ThreatLens monitors infrastructure 24/7.
 
-## AI-Native Operations (Judging Criterion #2)
+---
 
-The Gemini agent in `backend/agent.js` is given 4 function-calling tools and
-decides, per user message, which to invoke — this is a real function-calling
-loop against a real database, not a scripted demo:
+## ☁️ Google Cloud Platform & Gemini API Integration
 
-| Tool | Description | Example trigger |
+| Component | Technology | Description |
 |---|---|---|
-| `query_logs` | Filter logs by severity/type | "Show me critical events" |
-| `semantic_search` | Vector similarity search over log embeddings | "Any brute force attacks?" |
-| `get_ip_reputation` | Risk score + history for an IP | "Check IP 10.0.0.5" |
-| `suggest_remediation` | Step-by-step response playbook | "What should I do about ransomware?" |
-
-A separate, generic MongoDB "MCP" tool layer (`backend/mongoMCP.js`) exposes
-`find_documents`, `aggregate_documents`, `count_documents`, and
-`get_collections` for direct database inspection/testing independent of the
-agent.
+| **Primary LLM** | `Gemini 1.5 Flash` / `Gemini 2.0 Flash` | Powers conversational copilot analysis and 4-tool function-calling agent loop |
+| **Embeddings** | `gemini-embedding-001` | Generates 3072-dimensional log vector embeddings for semantic similarity search |
+| **Backend Service** | Node.js / Express | Hosted on **Google Cloud Run** (`backend/Dockerfile`) |
+| **Frontend Web App** | React 18 + TypeScript + Vite | Hosted on **Firebase Hosting** |
 
 ---
 
-## Architecture
+## 🤖 AI-Native Agent & Tool Architecture
 
-```
-Founder's question
-     |
-React Chat UI (Vite + TS, Firebase Hosting)
-     |
-Node.js/Express backend (Google Cloud Run)
-     |
-Gemini 2.0 Flash agent  <-- REQUIRED Gemini API LLM call
-     | picks one of 4 tools (function calling)
-+---------------------------------------------+
-| query_logs | semantic_search                |
-| get_ip_reputation | suggest_remediation     |
-+---------------------------------------------+
-     |
-MongoDB Atlas (+ Vector Search on Gemini embeddings)
-     |
-Plain-English answer
+The Gemini agent (`backend/agent.js`) dynamically executes function-calling tools against MongoDB Atlas:
+
+| Tool | Purpose | Example Query Trigger |
+|---|---|---|
+| `query_logs` | Structured MongoDB filtering by severity/type | *"Show me all critical ransomware threats"* |
+| `semantic_search` | Vector similarity search via Gemini embeddings | *"Are there any suspicious off-hour logins?"* |
+| `get_ip_reputation` | Risk rating, ASN, Tor exit node & threat feed history | *"Check reputation for IP 185.220.101.4"* |
+| `suggest_remediation` | Step-by-step incident response playbooks | *"How do I contain host fileserver-01?"* |
+
+---
+
+## 🏗️ Architecture Diagram
+
+```text
+                  Founder / Security Team Question
+                                 │
+            React Chat UI (Vite + TS + Cyber Glassmorphic CSS)
+                                 │
+            Node.js / Express API Backend (Cloud Run)
+                                 │
+           Google Gemini API (Gemini 1.5 Pro / BYOK Key)
+                                 │ Function Calling Loop
+      ┌──────────────────────────┴──────────────────────────┐
+      │ query_logs │ semantic_search                        │
+      │ get_ip_reputation │ suggest_remediation             │
+      └──────────────────────────┬──────────────────────────┘
+                                 │
+             MongoDB Atlas (+ Vector Search Index)
+                                 │
+            Actionable Response & 1-Click Mitigation
 ```
 
-## Project structure
+---
 
-```
+## 📁 Repository Structure
+
+```text
 threatlens/
 ├── backend/
 │   ├── agent.js          # Gemini agent + function-calling loop
-│   ├── tools.js           # 4 agent tools implementation
-│   ├── mongoMCP.js        # Generic MongoDB MCP-style tool server
-│   ├── logSchema.js        # Log event shape + validation
-│   ├── genaiClient.js      # Gemini API wrapper (chat + embeddings)
-│   ├── seed.js             # 15 sample security log events
-│   ├── embedLogs.js        # Generate Gemini embeddings for vector search
-│   ├── index.js            # Express server + all endpoints
-│   ├── Dockerfile          # Cloud Run deployment
+│   ├── tools.js          # 4 agent security tools implementation
+│   ├── mongoMCP.js       # Generic MongoDB MCP-style tool server
+│   ├── logSchema.js       # Log event schema & validation
+│   ├── genaiClient.js     # Gemini API wrapper with retry & BYOK support
+│   ├── seed.js            # Seed script for mock security logs
+│   ├── embedLogs.js       # Vector embedding generator for Atlas Search
+│   ├── index.js           # Express server & API endpoints
+│   ├── Dockerfile         # Cloud Run container deployment
 │   └── .env.example
 └── frontend/
     ├── src/
-    │   ├── App.tsx          # React chat UI + live threat sidebar
-    │   ├── main.tsx
-    │   └── index.css
-    ├── index.html
-    ├── vite.config.ts
-    └── Dockerfile           # optional containerized static hosting
-```
-
-## API Endpoints
-
-```
-GET  /health          — health check
-POST /chat            — send a message to the Gemini agent
-GET  /threats/recent  — recent high/critical severity events
-GET  /mcp/tools       — list MongoDB MCP tools
-POST /mcp/execute     — execute a MongoDB MCP tool directly
+    │   ├── App.tsx        # Single-Page App (Dashboard, Console, Payment, Account)
+    │   ├── main.tsx       # Entry point
+    │   └── index.css      # Cyber Glassmorphic design tokens & animations
+    ├── index.html         # Google Fonts (Outfit, Plus Jakarta Sans, JetBrains Mono)
+    └── vite.config.ts
 ```
 
 ---
 
-## Setup
+## 🌐 API Endpoints
 
-### Prerequisites
-- Node.js 18+
-- A MongoDB Atlas cluster (free tier is fine to start)
-- A Gemini API key — get one via [Google AI Studio](https://aistudio.google.com/) or your Google Cloud project (the Hackathon's Google Cloud Free Trial: https://cloud.google.com/free)
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Server health status |
+| `POST` | `/chat` | Agent chat endpoint (supports `X-Gemini-API-Key` BYOK header) |
+| `GET` | `/threats/recent` | Fetch recent high/critical threat events |
+| `POST` | `/threats/:eventId/priority` | Flag threat for priority review queue (Early Team+) |
+| `POST` | `/billing/checkout` | Create Stripe Checkout subscription session |
+| `GET` | `/billing/session/:id` | Verify completed Stripe checkout session |
+| `GET` | `/billing/evidence-export` | Download CSV audit log of tool calls (Scaling Up) |
+| `GET` | `/entitlements` | Retrieve active plan tier entitlement status |
+| `POST` | `/auth/signup` | Register new user account |
+| `POST` | `/auth/login` | Authenticate user & issue JWT session token |
+| `GET` | `/auth/me` | Fetch authenticated user profile & current plan |
+| `POST` | `/waitlist` | Capture waitlist signups |
 
-### Backend
+---
+
+## 🛠️ Local Development Setup
+
+### 1. Prerequisites
+- **Node.js**: v18+
+- **MongoDB Atlas**: Free cluster instance
+- **Google Gemini API Key**: Get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+### 2. Backend Setup
 ```bash
 cd backend
 npm install
-cp .env.example .env   # fill in MONGODB_URI and GEMINI_API_KEY
-npm run seed            # load 15 sample events
-npm run embed            # generate embeddings for semantic_search
+cp .env.example .env
+```
+Fill in `MONGODB_URI` and `GEMINI_API_KEY` in `backend/.env`.
+
+Seed sample log data and generate vector embeddings:
+```bash
+npm run seed
+npm run embed
 npm start
 ```
+The backend server runs on `http://localhost:8080`.
 
-### Frontend
+### 3. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Visit http://localhost:5173 — it proxies API calls to the backend on :8080.
-
-### Deploy
-
-**Backend → Cloud Run**
-```bash
-cd backend
-gcloud run deploy threatlens-backend \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars MONGODB_URI=...,GEMINI_API_KEY=...
-```
-
-**Frontend → Firebase Hosting**
-```bash
-cd frontend
-npm run build
-npx firebase-tools deploy --only hosting
-```
-
-### MongoDB Atlas Vector Search index
-After running `npm run embed`, create an Atlas Vector Search index named
-`vector_index` on the `security_logs` collection, indexing the `embedding`
-field (3072 dimensions, cosine similarity — matches `gemini-embedding-001`'s
-output). Until you do, `semantic_search` automatically falls back to an
-in-process cosine-similarity ranking so the demo still works.
+Visit `http://localhost:5173`. Vite proxies API requests to the backend server at `:8080`.
 
 ---
 
-## Business & revenue features
+## 💎 Plan Tier Advantages
 
-- **Landing page** (`Landing` tab) — public marketing page with the pitch, feature
-  highlights, pricing, and a waitlist signup form.
-- **Real Stripe Checkout** (`backend/billing.js`) — the paid plan buttons on the
-  Landing and Business tabs create a genuine Stripe Checkout Session in
-  subscription mode. Configure it by setting `STRIPE_SECRET_KEY` and the two
-  `STRIPE_PRICE_*` Price IDs in `backend/.env` (see `.env.example` for where
-  to get these from your Stripe Dashboard). Without Stripe configured, checkout
-  returns a clear explanatory error instead of crashing.
-- **Waitlist / signup capture** (`backend/waitlist.js`) — every landing-page
-  signup is stored in the `waitlist_signups` MongoDB collection. `GET /waitlist`
-  returns the full list — this is your real-user evidence for the hackathon
-  submission (export it when filling out the user-evidence section).
-
-### Accounts & pages
-Real accounts now, not just an anonymous browser id: bcrypt-hashed passwords
-+ JWT sessions (`backend/auth.js`). Set `JWT_SECRET` in `.env` to a long
-random string before deploying anywhere real users can reach it (generate one
-with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
-
-The frontend is a single-page app with these views (`frontend/src/App.tsx`):
-- **Landing** — public marketing page
-- **Sign up / Log in** — creates/verifies a real account, issues a JWT
-- **Dashboard** — post-login home: plan status, usage, quick links
-- **Console** — the chat interface (requires login)
-- **Payment** — plan selection → real Stripe Checkout (requires login)
-- **Payment confirmed** — dedicated success page after a verified payment
-- **Account** — plan facilities, usage stats, evidence export (requires login)
-
-### What paying actually unlocks
-Payment isn't cosmetic — plans are tied to an anonymous per-browser client ID
-(`backend/entitlements.js`) and gate real behavior:
-- **Query limits** — free plan capped at 50 agent queries/month (`recordQueryAndCheckLimit`), enforced in `POST /chat`. Paid plans are unlimited.
-- **Slack alerts** (`backend/alerts.js`) — Early Team+ gets a real Slack webhook ping whenever the agent surfaces a high/critical threat. Set `SLACK_WEBHOOK_URL` in `.env`.
-- **Priority review flagging** — `POST /threats/:eventId/priority`, gated to Early Team+, marks a threat for expedited review (flag button appears on threat cards in the Console).
-- **SOC2 evidence export** — `GET /billing/evidence-export`, gated to Scaling Up, downloads a CSV audit log of every tool call the agent made.
+| Advantage / Capability | Solo Founder ($0) | Early Team ($49/mo) | Scaling Up ($199/mo) |
+|---|---|---|---|
+| **Agent Copilot Queries** | 50 queries / mo | ⚡ **UNLIMITED** | ⚡ **UNLIMITED** |
+| **1-Click IP & Host Mitigation** | 🔒 Preview Mode | ⚡ **UNLOCKED** | ⚡ **UNLOCKED** |
+| **Real-Time Slack Alerts** | 🔒 Locked | ⚡ **UNLOCKED** | ⚡ **UNLOCKED** |
+| **Priority Threat Flagging** | 🔒 Locked | ⚡ **UNLOCKED** | ⚡ **UNLOCKED** |
+| **SOC2 CSV Evidence Export** | 🔒 Locked | 🔒 Locked | 👑 **UNLOCKED (CSV Audit Trail)** |
+| **Automated Playbook Execution** | 🔒 Locked | 🔒 Locked | 👑 **UNLOCKED (Auto-Playbooks)** |
+| **Dedicated Security Architect AI** | 🔒 Locked | 🔒 Locked | 👑 **UNLOCKED (Architect Mode)** |
+| **Support SLA** | Community | Standard | 👑 **Priority 24/7 SLA** |
 
 ---
 
-## Resources
-See `RESOURCES.md` for the hackathon's official links (Google Cloud free trial, Antigravity, orientation videos, FAQ/Discord, and the P&L submission template).
-
----
+## 📄 License
+MIT License — see `LICENSE` for details.
 
 ## License
 MIT — see `LICENSE`.
