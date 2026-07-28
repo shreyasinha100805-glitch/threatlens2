@@ -956,6 +956,29 @@ export default function App() {
   const [activeMermaidCode, setActiveMermaidCode] = useState<string | undefined>(undefined);
 
   const [threats, setThreats] = useState<ThreatEvent[]>(DEFAULT_THREATS);
+  const [timelineEvents, setTimelineEvents] = useState([
+    { id: "1", time: "10:01 AM", agent: "Threat Agent", action: "analyzed log.", type: "threat" as const },
+    { id: "2", time: "10:02 AM", agent: "Malware Agent", action: "flagged ransomware.", type: "malware" as const },
+    { id: "3", time: "10:03 AM", agent: "Payment Agent", action: "charged 1 USDC.", type: "payment" as const },
+    { id: "4", time: "10:04 AM", agent: "Report Agent", action: "generated PDF.", type: "report" as const },
+  ]);
+
+  const handleAgentAction = (agentName: string, actionMsg: string, costUsdc: number) => {
+    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    let typeVal: "threat" | "malware" | "payment" | "report" = "payment";
+    if (agentName.includes("Threat")) typeVal = "threat";
+    else if (agentName.includes("Malware")) typeVal = "malware";
+    else if (agentName.includes("Report")) typeVal = "report";
+
+    const newEvent = {
+      id: String(Date.now()),
+      time: timeStr,
+      agent: agentName,
+      action: actionMsg,
+      type: typeVal,
+    };
+    setTimelineEvents((prev) => [newEvent, ...prev]);
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium" | "low" | "flagged">("all");
   const [selectedThreat, setSelectedThreat] = useState<ThreatEvent | null>(null);
@@ -1754,13 +1777,16 @@ export default function App() {
           </div>
 
           {/* Autonomous Payment Engine Widget */}
-          <AutonomousPaymentWidget onViewTransactions={() => goTab("transactions")} />
+          <AutonomousPaymentWidget
+            onViewTransactions={() => goTab("transactions")}
+            onPaymentTriggered={() => handleAgentAction("Payment Agent", "settled 1 USDC autonomous micropayment", 1.0)}
+          />
 
           {/* Multi-Agent Swarm Cards */}
-          <MultiAgentCards />
+          <MultiAgentCards onAgentAction={handleAgentAction} />
 
-          {/* Agent Activity Timeline (Highest Priority) */}
-          <AgentActivityTimeline />
+          {/* Agent Activity Timeline */}
+          <AgentActivityTimeline events={timelineEvents} />
 
           {/* Threat Heatmap Visual Analytics */}
           <ThreatHeatmap />

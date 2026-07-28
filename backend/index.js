@@ -14,6 +14,7 @@ const { Waitlist } = require("./waitlist");
 const { Entitlements, FREE_MONTHLY_QUERY_LIMIT } = require("./entitlements");
 const { sendSlackAlert, extractHighSeverityEvents } = require("./alerts");
 const { Auth } = require("./auth");
+const circlePayments = require("./circlePayments");
 
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -258,6 +259,28 @@ async function main() {
       res.json({ planId, planName: planName || "Solo Founder", usage });
     } catch (err) {
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // --- Circle USDC Autonomous Payment Engine Endpoints ---
+  app.get("/api/circle/balance", (_req, res) => {
+    res.json(circlePayments.getWalletState());
+  });
+
+  app.get("/api/circle/transactions", (_req, res) => {
+    res.json(circlePayments.getTransactions());
+  });
+
+  app.post("/api/circle/pay", (req, res) => {
+    const { agent, amount, description } = req.body || {};
+    if (!agent || typeof amount !== "number") {
+      return res.status(400).json({ error: "Request body must include `agent` string and `amount` number." });
+    }
+    try {
+      const result = circlePayments.processPayment(agent, amount, description);
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
     }
   });
 

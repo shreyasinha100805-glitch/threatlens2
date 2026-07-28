@@ -1,63 +1,21 @@
-import React, { useState } from "react";
-
-export interface TransactionRecord {
-  txHash: string;
-  agent: string;
-  amount: string;
-  status: "Success" | "Pending" | "Failed";
-  timestamp: string;
-  type: string;
-}
-
-const defaultTransactions: TransactionRecord[] = [
-  {
-    txHash: "0x123",
-    agent: "Payment Agent",
-    amount: "1 USDC",
-    status: "Success",
-    timestamp: "2026-07-29 10:03 AM",
-    type: "Micro-charge for PDF Generation",
-  },
-  {
-    txHash: "0x456",
-    agent: "Malware Agent",
-    amount: "0.5 USDC",
-    status: "Success",
-    timestamp: "2026-07-29 10:02 AM",
-    type: "Autonomous Ransomware Sandbox",
-  },
-  {
-    txHash: "0x789a1b2c3d4e5f6g7h8i9j0k",
-    agent: "Threat Agent",
-    amount: "2.0 USDC",
-    status: "Success",
-    timestamp: "2026-07-29 09:45 AM",
-    type: "API Intelligence Query",
-  },
-  {
-    txHash: "0x890b2c3d4e5f6g7h8i9j0k1l",
-    agent: "Report Agent",
-    amount: "1.0 USDC",
-    status: "Success",
-    timestamp: "2026-07-29 09:15 AM",
-    type: "Executive Summary Compilation",
-  },
-  {
-    txHash: "0x901c3d4e5f6g7h8i9j0k1l2m",
-    agent: "Payment Agent",
-    amount: "1.5 USDC",
-    status: "Success",
-    timestamp: "2026-07-29 08:30 AM",
-    type: "Automated Credit Top-up",
-  },
-];
+import React, { useEffect, useState } from "react";
+import circlePaymentEngine, { CircleTransaction } from "./circlePaymentEngine";
 
 export const TransactionHistory: React.FC<{
-  transactions?: TransactionRecord[];
   onBackToDashboard?: () => void;
-}> = ({ transactions = defaultTransactions, onBackToDashboard }) => {
+}> = ({ onBackToDashboard }) => {
+  const [transactions, setTransactions] = useState<CircleTransaction[]>(
+    circlePaymentEngine.getTransactions()
+  );
   const [filterAgent, setFilterAgent] = useState<string>("All");
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = circlePaymentEngine.subscribe(() => {
+      setTransactions(circlePaymentEngine.getTransactions());
+    });
+    return () => unsubscribe();
+  }, []);
 
   const agents = ["All", "Payment Agent", "Malware Agent", "Threat Agent", "Report Agent"];
 
@@ -72,18 +30,40 @@ export const TransactionHistory: React.FC<{
     setTimeout(() => setCopiedHash(null), 2000);
   };
 
+  const handleExportCSV = () => {
+    const header = "TxHash,Agent,Amount,Status,Timestamp,Type,Network\n";
+    const rows = filtered
+      .map(
+        (t) =>
+          `"${t.txHash}","${t.agent}","${t.amount}","${t.status}","${t.timestamp}","${t.type}","${t.network || 'Circle USDC'}"`
+      )
+      .join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(header + rows);
+    const link = document.createElement("a");
+    link.setAttribute("href", csvContent);
+    link.setAttribute("download", `ThreatLens_Circle_Transactions_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="transaction-history-page">
       <div className="page-header">
         <div>
           <h2 className="page-title">💳 Autonomous Transaction History</h2>
-          <p className="page-subtitle">Circle x402 Micropayment Ledger & Audit Records</p>
+          <p className="page-subtitle">Circle x402 Micropayment Settlement Ledger & Audit Trail</p>
         </div>
-        {onBackToDashboard && (
-          <button type="button" className="btn-secondary" onClick={onBackToDashboard}>
-            ← Back to Dashboard
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button type="button" className="btn-secondary" onClick={handleExportCSV}>
+            📥 Export CSV
           </button>
-        )}
+          {onBackToDashboard && (
+            <button type="button" className="btn-secondary" onClick={onBackToDashboard}>
+              ← Back to Dashboard
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -114,6 +94,7 @@ export const TransactionHistory: React.FC<{
               <th>Status</th>
               <th>Timestamp</th>
               <th>Description</th>
+              <th>Network</th>
             </tr>
           </thead>
           <tbody>
@@ -143,6 +124,7 @@ export const TransactionHistory: React.FC<{
                 </td>
                 <td className="time-cell">{tx.timestamp}</td>
                 <td className="type-cell">{tx.type}</td>
+                <td className="network-cell">{tx.network || "Circle USDC Testnet"}</td>
               </tr>
             ))}
           </tbody>
