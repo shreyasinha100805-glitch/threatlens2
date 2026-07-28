@@ -168,6 +168,3 @@ Visit `http://localhost:5173`. Vite proxies API requests to the backend server a
 
 ## 📄 License
 MIT License — see `LICENSE` for details.
-
-## License
-MIT — see `LICENSE`.
