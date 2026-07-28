@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { CyberCanvas } from "./CyberCanvas";
+import { ThreatRadarMap } from "./ThreatRadarMap";
+import { DiagramStudio, VisualMermaid } from "./DiagramStudio";
+import { cyberAudio } from "./cyberAudio";
+import { AgentActivityTimeline } from "./AgentActivityTimeline";
+import { AutonomousPaymentWidget } from "./AutonomousPaymentWidget";
+import { MultiAgentCards } from "./MultiAgentCards";
+import { ThreatHeatmap } from "./ThreatHeatmap";
+import { TransactionHistory } from "./TransactionHistory";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -37,8 +46,9 @@ interface AuthUser {
   companyName?: string | null;
 }
 
-type Tab = "landing" | "signup" | "login" | "dashboard" | "console" | "payment" | "payment-confirmed" | "account";
-const PROTECTED_TABS: Tab[] = ["dashboard", "console", "payment", "payment-confirmed", "account"];
+type Tab = "landing" | "signup" | "login" | "dashboard" | "console" | "diagrams" | "payment" | "payment-confirmed" | "account" | "transactions";
+const PROTECTED_TABS: Tab[] = ["dashboard", "console", "diagrams", "payment", "payment-confirmed", "account", "transactions"];
+
 
 const SUGGESTIONS = [
   "What are the critical threats right now?",
@@ -238,6 +248,29 @@ function generateDynamicSecurityAnswer(message: string, currentPlanId?: string, 
     tierBadge = "🔥 **[EARLY TEAM TIER · UNLIMITED AI COPILOT UNLOCKED]**\n\n";
   } else {
     tierBadge = "⚡ **[SOLO FOUNDER FREE TIER · METERED COPILOT ACCESS]**\n\n";
+  }
+
+  // 0. Diagram & Visual Attack Flow Requests
+  if (msgLower.includes("diagram") || msgLower.includes("flow") || msgLower.includes("topology") || msgLower.includes("architecture")) {
+    return {
+      reply: tierBadge + "📊 **VISUAL INCIDENT & ATTACK VECTOR DIAGRAM**:\n\n" +
+        "Here is the rendered Mermaid attack sequence for active incidents:\n\n" +
+        "```mermaid\n" +
+        "graph TD\n" +
+        "  Attacker[\"🌐 Attacker IP: 185.220.101.4 (Tor Exit Node)\"] -->|Exploit Port 22| GW[\"🛡️ SSH Gateway (ssh-gateway)\"]\n" +
+        "  GW -->|Privilege Escalation T1068| App[\"💻 App Server (app-server-03)\"]\n" +
+        "  App -->|Lateral Movement| File[\"📁 File Server (fileserver-01)\"]\n" +
+        "  File -->|Drop Ransom Note| Encr[\"🔒 Encrypted Shared Volume (.locked)\"]\n" +
+        "  File -->|Data Exfiltration T1048| Exf[\"⚠️ Storage Endpoint (103.224.182.9)\"]\n" +
+        "  style Encr fill:#7f1d1d,stroke:#ef4444,color:#fff\n" +
+        "  style Attacker fill:#7f1d1d,stroke:#ef4444,color:#fff\n" +
+        "  style Exf fill:#7c2d12,stroke:#f59e0b,color:#fff\n" +
+        "```\n\n" +
+        "💡 You can open the **📊 Diagram Studio** tab from the top navigation bar to edit, customize, or export this diagram!",
+      tools: [
+        { tool: "query_security_logs", args: { action: "generate_attack_diagram" } },
+      ],
+    };
   }
 
   // 1. Critical Threats & Active Incidents
@@ -490,15 +523,18 @@ function AppNav({
   geminiKey?: string;
   onOpenGeminiModal?: () => void;
 }) {
+  const [audioActive, setAudioActive] = useState(cyberAudio.isEnabled());
   const items: [Tab, string][] = [
     ["dashboard", "Dashboard"],
     ["console", "Console"],
+    ["diagrams", "📊 Diagram Studio"],
+    ["transactions", "💳 Transactions"],
     ["payment", "Payment"],
     ["account", "Account"],
   ];
   return (
     <header className="app-nav" aria-label="Application Header">
-      <div className="brand">🔐 ThreatLens</div>
+      <div className="brand" onClick={() => goTab("dashboard")} style={{ cursor: "pointer" }}>🔐 ThreatLens</div>
       <div className="tabs" role="tablist" aria-label="Main Navigation Tabs">
         {items.map(([t, label]) => (
           <button
@@ -508,7 +544,10 @@ function AppNav({
             aria-selected={tab === t}
             aria-current={tab === t ? "page" : undefined}
             className={tab === t ? "active" : ""}
-            onClick={() => goTab(t)}
+            onClick={() => {
+              cyberAudio.playClick();
+              goTab(t);
+            }}
             aria-label={`Navigate to ${label} view`}
           >
             {label}
@@ -517,6 +556,20 @@ function AppNav({
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <button
+          type="button"
+          className="audio-toggle-btn"
+          onClick={() => {
+            const next = !cyberAudio.isEnabled();
+            cyberAudio.setEnabled(next);
+            setAudioActive(next);
+            if (next) cyberAudio.playClick();
+          }}
+          aria-label="Toggle Audio FX"
+        >
+          {audioActive ? "🔊 Audio: ON" : "🔇 Audio: OFF"}
+        </button>
+
         {onOpenGeminiModal && (
           <button
             type="button"
@@ -701,6 +754,7 @@ function ThreatDetailModal({
   onAskCopilot,
   isPaid,
   onUpgradePrompt,
+  onOpenDiagramStudio,
 }: {
   threat: ThreatEvent;
   onClose: () => void;
@@ -709,6 +763,7 @@ function ThreatDetailModal({
   onAskCopilot: (prompt: string) => void;
   isPaid: boolean;
   onUpgradePrompt: () => void;
+  onOpenDiagramStudio?: (code: string) => void;
 }) {
   const [logCopied, setLogCopied] = useState(false);
   const [tierWarning, setTierWarning] = useState<string | null>(null);
@@ -817,6 +872,21 @@ function ThreatDetailModal({
                 {mitigationState?.quarantinedHost ? `✓ Host ${threat.targetHost || "endpoint"} Isolated` : `🔒 Quarantine Host (${threat.targetHost || "endpoint"})`}
               </button>
 
+              <button
+                type="button"
+                className="action-btn-secondary"
+                onClick={() => {
+                  cyberAudio.playClick();
+                  onClose();
+                  if (onOpenDiagramStudio) {
+                    const code = `graph TD\n  Attacker["🌐 Attacker: ${threat.sourceIp}"] -->|${threat.eventType}| Host["💻 Target: ${threat.targetHost || "Gateway"}"]\n  Host -->|${threat.mitreTechnique || "Technique"}| Impact["⚠️ Risk Rating: ${threat.riskScore || 85}/100"]\n  style Attacker fill:#7f1d1d,stroke:#ef4444,color:#fff\n  style Impact fill:#7c2d12,stroke:#f59e0b,color:#fff`;
+                    onOpenDiagramStudio(code);
+                  }
+                }}
+              >
+                📊 Visual Incident Diagram
+              </button>
+
               <button type="button" className="action-btn-secondary" onClick={downloadJsonReport}>
                 📄 Export Brief (JSON)
               </button>
@@ -851,12 +921,39 @@ function ThreatDetailModal({
   );
 }
 
+function renderMessageContent(text: string) {
+  if (text.includes("```mermaid")) {
+    const parts = text.split(/```mermaid/);
+    return (
+      <div>
+        {parts.map((part, index) => {
+          if (index === 0) return <div key={index}>{part}</div>;
+          const endCodeIndex = part.indexOf("```");
+          if (endCodeIndex !== -1) {
+            const mermaidCode = part.substring(0, endCodeIndex).trim();
+            const rest = part.substring(endCodeIndex + 3);
+            return (
+              <div key={index} style={{ margin: "14px 0" }}>
+                <VisualMermaid code={mermaidCode} />
+                {rest && <div>{rest}</div>}
+              </div>
+            );
+          }
+          return <div key={index}>{part}</div>;
+        })}
+      </div>
+    );
+  }
+  return text;
+}
+
 export default function App() {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("threatlens_token"));
   const [geminiKey, setGeminiKey] = useState<string>(() => localStorage.getItem("threatlens_gemini_key") || "");
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [tab, setTabRaw] = useState<Tab>(() => (localStorage.getItem("threatlens_token") ? "dashboard" : "landing"));
+  const [activeMermaidCode, setActiveMermaidCode] = useState<string | undefined>(undefined);
 
   const [threats, setThreats] = useState<ThreatEvent[]>(DEFAULT_THREATS);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1583,6 +1680,7 @@ export default function App() {
   if (tab === "dashboard") {
     return (
       <div className="app-shell-full">
+        <CyberCanvas />
         {showKeyModal && (
           <GeminiKeyModal
             apiKey={geminiKey}
@@ -1604,6 +1702,9 @@ export default function App() {
           <div className="plan-banner success" style={{ margin: "18px 0" }}>
             ✓ Active Plan Tier: <strong>{currentPlan?.name || "Solo Founder"}</strong>. {isPaid ? "You have UNLIMITED queries, 1-click mitigation, and Slack alerts active." : "Metered access (50 queries/mo). Upgrade for unlimited advantages."}
           </div>
+
+          {/* Tactical Cyber Threat Radar Visualization Map */}
+          <ThreatRadarMap threats={threats} onSelectThreat={(t) => setSelectedThreat(t)} />
 
           <div className="stat-grid">
             <div className="stat">
@@ -1630,6 +1731,17 @@ export default function App() {
               <strong>Open Console</strong>
               <span>Ask ThreatLens about active threats, IPs, or remediation steps.</span>
             </button>
+
+            <button
+              type="button"
+              className="dashboard-card"
+              onClick={() => goTab("diagrams")}
+              aria-label="Open Security Diagram Studio"
+            >
+              <strong>📊 Security Diagram Studio</strong>
+              <span>Generate visual attack sequence diagrams & topology maps.</span>
+            </button>
+
             <button
               type="button"
               className="dashboard-card"
@@ -1639,16 +1751,69 @@ export default function App() {
               <strong>{isPaid ? "Manage plan advantages" : "Upgrade plan advantages"}</strong>
               <span>{isPaid ? "Explore your unlocked Early Team / Scaling Up perks." : "Unlock unlimited queries, 1-click mitigation, and Slack alerts."}</span>
             </button>
-            <button
-              type="button"
-              className="dashboard-card"
-              onClick={() => goTab("account")}
-              aria-label="Account and facilities"
-            >
-              <strong>Account &amp; Tier Advantages</strong>
-              <span>See what your plan unlocks and export evidence for compliance.</span>
-            </button>
           </div>
+
+          {/* Autonomous Payment Engine Widget */}
+          <AutonomousPaymentWidget onViewTransactions={() => goTab("transactions")} />
+
+          {/* Multi-Agent Swarm Cards */}
+          <MultiAgentCards />
+
+          {/* Agent Activity Timeline (Highest Priority) */}
+          <AgentActivityTimeline />
+
+          {/* Threat Heatmap Visual Analytics */}
+          <ThreatHeatmap />
+        </main>
+      </div>
+    );
+  }
+
+  if (tab === "transactions") {
+    return (
+      <div className="app-shell-full">
+        <CyberCanvas />
+        {showKeyModal && (
+          <GeminiKeyModal
+            apiKey={geminiKey}
+            onSaveKey={saveGeminiKey}
+            onClose={() => setShowKeyModal(false)}
+          />
+        )}
+        <AppNav
+          tab={tab}
+          goTab={goTab}
+          onLogout={logout}
+          geminiKey={geminiKey}
+          onOpenGeminiModal={() => setShowKeyModal(true)}
+        />
+        <main className="dashboard">
+          <TransactionHistory onBackToDashboard={() => goTab("dashboard")} />
+        </main>
+      </div>
+    );
+  }
+
+  if (tab === "diagrams") {
+    return (
+      <div className="app-shell-full">
+        <CyberCanvas />
+        {showKeyModal && (
+          <GeminiKeyModal
+            apiKey={geminiKey}
+            onSaveKey={saveGeminiKey}
+            onClose={() => setShowKeyModal(false)}
+          />
+        )}
+        <AppNav
+          tab={tab}
+          goTab={goTab}
+          onLogout={logout}
+          geminiKey={geminiKey}
+          onOpenGeminiModal={() => setShowKeyModal(true)}
+        />
+        <main className="dashboard">
+          <DiagramStudio initialMermaid={activeMermaidCode} />
         </main>
       </div>
     );
@@ -1931,6 +2096,10 @@ export default function App() {
           onAskCopilot={send}
           isPaid={isPaid}
           onUpgradePrompt={() => goTab("payment")}
+          onOpenDiagramStudio={(code) => {
+            setActiveMermaidCode(code);
+            goTab("diagrams");
+          }}
         />
       )}
 
@@ -2050,7 +2219,7 @@ export default function App() {
                   </button>
                 )}
               </div>
-              <div className="message-content">{m.text}</div>
+              <div className="message-content">{renderMessageContent(m.text)}</div>
               {m.toolTrace && m.toolTrace.length > 0 && (
                 <div className="tool-trace">Tools used: {m.toolTrace.map((t) => t.tool).join(", ")}</div>
               )}
