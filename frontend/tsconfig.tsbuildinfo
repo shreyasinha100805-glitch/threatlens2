@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/agentactivitytimeline.tsx","./src/app.tsx","./src/autonomouspaymentwidget.tsx","./src/confettieffect.tsx","./src/cybercanvas.tsx","./src/diagramstudio.tsx","./src/multiagentcards.tsx","./src/paymentcheckoutmodal.tsx","./src/threatheatmap.tsx","./src/threatlenscopilotpanel.tsx","./src/threatradarmap.tsx","./src/transactionhistory.tsx","./src/circlepaymentengine.ts","./src/cyberaudio.ts","./src/main.tsx","./src/pdfreportgenerator.ts"],"version":"5.9.3"}

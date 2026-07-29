@@ -22,6 +22,15 @@ interface ThreatRadarMapProps {
 
 export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps) {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+
+  // Country threat distribution data
+  const countryData = [
+    { code: "US", flag: "🇺🇸", name: "USA", count: 3, ips: ["185.220.101.4", "103.224.182.9"] },
+    { code: "RU", flag: "🇷🇺", name: "Russia", count: 5, ips: ["45.142.214.165", "194.26.29.112"] },
+    { code: "CN", flag: "🇨🇳", name: "China", count: 2, ips: ["103.152.220.8", "218.92.0.104"] },
+    { code: "DE", flag: "🇩🇪", name: "Germany", count: 1, ips: ["162.55.90.12"] },
+  ];
 
   // Core Target Host Positions (Center Cluster)
   const targetNodes = [
@@ -33,10 +42,9 @@ export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps)
 
   // Map threats to attacker origin nodes around radar periphery
   const attackerNodes = threats.map((t, idx) => {
-    // Distribute around perimeter
     const angles = [35, 140, 220, 305, 15, 180, 270];
     const angleRad = (angles[idx % angles.length] * Math.PI) / 180;
-    const radius = 34; // percent radius from center (50, 50)
+    const radius = 34;
     const x = Math.round(50 + Math.cos(angleRad) * radius);
     const y = Math.round(50 + Math.sin(angleRad) * radius);
 
@@ -54,12 +62,12 @@ export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps)
   });
 
   return (
-    <div className="radar-map-wrapper glass-panel">
+    <div className="radar-map-wrapper glass-panel" style={{ borderRadius: 20, padding: 20 }}>
       {/* Radar Header Telemetry */}
       <div className="radar-header">
         <div className="radar-title-group">
           <span className="radar-pulse-live" />
-          <span className="radar-title">TACTICAL THREAT RADAR & ATTACK VECTOR MAP</span>
+          <span className="radar-title">TACTICAL THREAT RADAR &amp; ATTACK VECTOR MAP</span>
           <span className="radar-tag">LIVE TELEMETRY</span>
         </div>
         <div className="radar-metrics">
@@ -80,9 +88,53 @@ export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps)
         </div>
       </div>
 
+      {/* INTERACTIVE WORLD MAP COUNTRY THREAT BAR */}
+      <div className="country-threat-bar" style={{ display: "flex", gap: 10, margin: "14px 0", flexWrap: "wrap" }}>
+        {countryData.map((c) => {
+          const isActive = selectedCountry === c.code;
+          return (
+            <button
+              key={c.code}
+              type="button"
+              onClick={() => {
+                cyberAudio.playClick();
+                setSelectedCountry(isActive ? null : c.code);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 14px",
+                background: isActive ? "rgba(255, 107, 0, 0.2)" : "var(--panel-raised)",
+                border: isActive ? "1px solid var(--brand-orange, #ff6a3d)" : "1px solid var(--line)",
+                borderRadius: 10,
+                color: "var(--paper)",
+                fontSize: 12,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{c.flag}</span>
+              <span style={{ fontWeight: 600 }}>{c.name}</span>
+              <span
+                style={{
+                  background: c.count > 3 ? "#ef4444" : "#f59e0b",
+                  color: "#ffffff",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  padding: "1px 7px",
+                  borderRadius: 8,
+                }}
+              >
+                {c.count} threats
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Interactive Radar Visual Area */}
       <div className="radar-viewport">
-        {/* Concentric Radar Rings & Crosshairs */}
         <div className="radar-ring ring-outer" />
         <div className="radar-ring ring-mid" />
         <div className="radar-ring ring-inner" />
@@ -90,7 +142,7 @@ export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps)
         <div className="radar-crosshair crosshair-v" />
         <div className="radar-sweep-beam" />
 
-        {/* Attack Vector Connection Lines (SVG) */}
+        {/* Attack Vector Connection Lines */}
         <svg className="radar-svg-overlay">
           {attackerNodes.map((att) => {
             const target = targetNodes.find((n) => n.id === att.target) || targetNodes[0];
@@ -114,14 +166,6 @@ export function ThreatRadarMap({ threats, onSelectThreat }: ThreatRadarMapProps)
                   strokeDasharray="4 4"
                   className="attack-vector-line"
                 />
-                {/* Laser Pulse Dot moving along line */}
-                <circle className="attack-vector-pulse" r="3" fill={strokeColor}>
-                  <animateMotion
-                    path={`M ${att.x * 3} ${att.y * 2} L ${target.x * 3} ${target.y * 2}`}
-                    dur="3s"
-                    repeatCount="indefinite"
-                  />
-                </circle>
               </g>
             );
           })}

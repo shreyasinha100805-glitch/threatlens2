@@ -136,6 +136,21 @@ class CyberAudio {
       osc.stop(ctx.currentTime + 0.16);
     } catch {}
   }
+
+  /** Speaks text aloud using Web Speech API synthesis if audio enabled */
+  public speak(text: string): void {
+    if (!this.enabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      const voices = window.speechSynthesis.getVoices();
+      const engVoice = voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Neural")));
+      if (engVoice) utterance.voice = engVoice;
+      window.speechSynthesis.speak(utterance);
+    } catch {}
+  }
 }
 
 export const cyberAudio = new CyberAudio();

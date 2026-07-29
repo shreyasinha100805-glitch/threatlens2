@@ -88,21 +88,24 @@ export const circlePaymentEngine = {
   executeAutonomousPayment(
     agentName: string,
     amountUsdc: number,
-    description: string
+    description: string,
+    isPlanSubscription: boolean = false
   ): CircleTransaction {
-    if (walletState.spentTodayUsdc + amountUsdc > walletState.dailyLimitUsdc) {
+    if (!isPlanSubscription && walletState.spentTodayUsdc + amountUsdc > walletState.dailyLimitUsdc) {
       throw new Error(
         `Safety Rail Triggered: Daily limit of ${walletState.dailyLimitUsdc} USDC exceeded.`
       );
     }
 
-    if (walletState.balanceUsdc < amountUsdc) {
+    if (!isPlanSubscription && walletState.balanceUsdc < amountUsdc) {
       throw new Error(`Insufficient wallet balance (${walletState.balanceUsdc} USDC available).`);
     }
 
     // Update wallet state
-    walletState.balanceUsdc = parseFloat((walletState.balanceUsdc - amountUsdc).toFixed(2));
-    walletState.spentTodayUsdc = parseFloat((walletState.spentTodayUsdc + amountUsdc).toFixed(2));
+    if (!isPlanSubscription) {
+      walletState.balanceUsdc = parseFloat(Math.max(0, walletState.balanceUsdc - amountUsdc).toFixed(2));
+      walletState.spentTodayUsdc = parseFloat((walletState.spentTodayUsdc + amountUsdc).toFixed(2));
+    }
     walletState.transactionsTodayCount += 1;
     walletState.lastPaymentUsdc = amountUsdc;
 
@@ -116,12 +119,12 @@ export const circlePaymentEngine = {
     const newTx: CircleTransaction = {
       txHash,
       agent: agentName,
-      amount: `${amountUsdc} USDC`,
+      amount: `${amountUsdc} ${isPlanSubscription ? "USD" : "USDC"}`,
       amountNum: amountUsdc,
       status: "Success",
       timestamp: timeStr,
       type: description,
-      network: "Circle USDC Developer Testnet",
+      network: isPlanSubscription ? "Stripe / Card Payment Gateway" : "Circle USDC Developer Testnet",
     };
 
     transactionsList = [newTx, ...transactionsList];

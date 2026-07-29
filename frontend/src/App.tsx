@@ -9,6 +9,10 @@ import { AutonomousPaymentWidget } from "./AutonomousPaymentWidget";
 import { MultiAgentCards } from "./MultiAgentCards";
 import { ThreatHeatmap } from "./ThreatHeatmap";
 import { TransactionHistory } from "./TransactionHistory";
+import { PaymentCheckoutModal, Plan } from "./PaymentCheckoutModal";
+import { ConfettiEffect } from "./ConfettiEffect";
+import { ThreatLensCopilotPanel } from "./ThreatLensCopilotPanel";
+import circlePaymentEngine from "./circlePaymentEngine";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -516,12 +520,16 @@ function AppNav({
   onLogout,
   geminiKey,
   onOpenGeminiModal,
+  theme,
+  onToggleTheme,
 }: {
   tab: Tab;
   goTab: (t: Tab) => void;
   onLogout: () => void;
   geminiKey?: string;
   onOpenGeminiModal?: () => void;
+  theme?: "dark" | "light";
+  onToggleTheme?: () => void;
 }) {
   const [audioActive, setAudioActive] = useState(cyberAudio.isEnabled());
   const items: [Tab, string][] = [
@@ -570,6 +578,18 @@ function AppNav({
           {audioActive ? "🔊 Audio: ON" : "🔇 Audio: OFF"}
         </button>
 
+        {onToggleTheme && (
+          <button
+            type="button"
+            className="audio-toggle-btn"
+            onClick={onToggleTheme}
+            aria-label="Toggle Dark / Light Mode"
+            style={{ minWidth: 90 }}
+          >
+            {theme === "light" ? "☀️ Light" : "🌙 Dark"}
+          </button>
+        )}
+
         {onOpenGeminiModal && (
           <button
             type="button"
@@ -580,6 +600,7 @@ function AppNav({
             ✨ {geminiKey ? "Gemini Key Active" : "Gemini Access"}
           </button>
         )}
+
 
         <button
           type="button"
@@ -979,6 +1000,44 @@ export default function App() {
     };
     setTimelineEvents((prev) => [newEvent, ...prev]);
   };
+
+  const runLiveIncidentDemo = () => {
+    cyberAudio.playAlert();
+    cyberAudio.speak("Live incident simulation executed. Multi-agent swarm mitigation complete.");
+
+    const newThreat: ThreatEvent = {
+      eventId: `EVT-${Math.floor(1000 + Math.random() * 9000)}`,
+      timestamp: new Date().toISOString(),
+      severity: "critical",
+      eventType: "Ransomware Attack (T1486)",
+      sourceIp: "185.220.101.4",
+      targetHost: "fileserver-01",
+      description: "Critical T1486 ransomware payload attempt detected & automatically isolated by ThreatLens swarm.",
+      riskScore: 98,
+      mitreTechnique: "T1486 - Data Encrypted for Impact",
+      mitreTactic: "Impact",
+      status: "Mitigated & Isolated",
+    };
+
+    setThreats((prev) => [newThreat, ...prev]);
+    handleAgentAction("Malware Agent", "isolated ransomware vector (T1486) on fileserver-01", 1.0);
+    try {
+      circlePaymentEngine.executeAutonomousPayment("Payment Agent", 1.0, "Live Incident Demo Automated Mitigation");
+    } catch {}
+
+    const demoMermaid = `sequenceDiagram
+  autonumber
+  actor Attacker as TOR Exit (185.220.101.4)
+  participant Edge as Edge Firewall
+  participant Agent as ThreatLens Agent Swarm
+  participant Target as fileserver-01 (10.0.4.12)
+  Attacker->>Target: Ingress Ransomware Payload (T1486)
+  Target-->>Agent: High Entropy Alert Event
+  Agent->>Edge: 1-Click Isolation Rule Dispatched
+  Agent->>Agent: Circle USDC 1.0 Micropayment Settled`;
+    setActiveMermaidCode(demoMermaid);
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState<"all" | "critical" | "high" | "medium" | "low" | "flagged">("all");
   const [selectedThreat, setSelectedThreat] = useState<ThreatEvent | null>(null);
@@ -1006,6 +1065,7 @@ export default function App() {
   const [currentPlan, setCurrentPlan] = useState<{ id: string; name: string } | null>({ id: "solo_founder", name: "Solo Founder" });
   const [usage, setUsage] = useState<{ count: number; limit: number } | null>({ count: 3, limit: 50 });
   const [confirmedSub, setConfirmedSub] = useState<{ planName: string; subscriptionId?: string } | null>(null);
+  const [selectedPlanForCheckout, setSelectedPlanForCheckout] = useState<Plan | null>(null);
 
   const [authForm, setAuthForm] = useState({ email: "", password: "", companyName: "" });
   const [authStatus, setAuthStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -1201,6 +1261,24 @@ export default function App() {
     }
   }
 
+  async function handleStripeCheckout(planId: string) {
+    if (!token) return;
+    try {
+      const { ok, data } = await apiFetch("/billing/checkout", {
+        method: "POST",
+        headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ planId }),
+      });
+      if (ok && data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Stripe external server is not configured in this demo environment. Please use the Credit Card or Circle USDC payment form in the modal.");
+      }
+    } catch {
+      alert("Stripe external server is not configured in this demo environment. Please use the Credit Card or Circle USDC payment form in the modal.");
+    }
+  }
+
   async function startCheckout(planId: string) {
     if (!token) {
       const planObj = PLANS.find((p) => p.id === planId);
@@ -1213,32 +1291,12 @@ export default function App() {
       goTab("console");
       return;
     }
-    setCheckoutStatus((s) => ({ ...s, [planId]: "loading" }));
-    setCheckoutError("");
-    try {
-      const { ok, data } = await apiFetch("/billing/checkout", {
-        method: "POST",
-        headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
-        body: JSON.stringify({ planId }),
-      });
-      if (ok && data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-      throw new Error(data?.error || "Checkout failed.");
-    } catch {
-      // Demo / fallback tier switch for testing advantages
-      const planObj = PLANS.find((p) => p.id === planId);
-      if (planObj) {
-        setCurrentPlan({ id: planObj.id, name: planObj.name });
-        setConfirmedSub({ planName: planObj.name, subscriptionId: `sub_demo_${Date.now().toString(36)}` });
-        setTabRaw("payment-confirmed");
-      } else {
-        setCheckoutStatus((s) => ({ ...s, [planId]: "error" }));
-        setCheckoutError("Couldn't open Stripe checkout. Demo tier activated!");
-      }
+    const planObj = PLANS.find((p) => p.id === planId);
+    if (planObj) {
+      setSelectedPlanForCheckout(planObj as Plan);
     }
   }
+
 
   async function send(text: string) {
     const message = text.trim();
@@ -1722,9 +1780,18 @@ export default function App() {
           <h1>Welcome{authUser?.companyName ? `, ${authUser.companyName}` : ""}.</h1>
           <p className="tagline">{authUser?.email}</p>
 
-          <div className="plan-banner success" style={{ margin: "18px 0" }}>
-            ✓ Active Plan Tier: <strong>{currentPlan?.name || "Solo Founder"}</strong>. {isPaid ? "You have UNLIMITED queries, 1-click mitigation, and Slack alerts active." : "Metered access (50 queries/mo). Upgrade for unlimited advantages."}
-          </div>
+          {/* AI COPILOT & COMMAND CENTER PANEL */}
+          <ThreatLensCopilotPanel
+            onRunLiveDemo={runLiveIncidentDemo}
+            onSendCopilotPrompt={(prompt) => {
+              goTab("console");
+              send(prompt);
+            }}
+            onGenerateDiagram={(code) => {
+              setActiveMermaidCode(code);
+              goTab("diagrams");
+            }}
+          />
 
           {/* Tactical Cyber Threat Radar Visualization Map */}
           <ThreatRadarMap threats={threats} onSelectThreat={(t) => setSelectedThreat(t)} />
@@ -1855,6 +1922,20 @@ export default function App() {
             onClose={() => setShowKeyModal(false)}
           />
         )}
+        {selectedPlanForCheckout && (
+          <PaymentCheckoutModal
+            plan={selectedPlanForCheckout}
+            onClose={() => setSelectedPlanForCheckout(null)}
+            onPaymentSuccess={({ planName, subscriptionId }) => {
+              setCurrentPlan({ id: selectedPlanForCheckout.id, name: planName });
+              setConfirmedSub({ planName, subscriptionId });
+              setSelectedPlanForCheckout(null);
+              setTabRaw("payment-confirmed");
+              if (token) refreshEntitlements(token);
+            }}
+            onStripeCheckout={handleStripeCheckout}
+          />
+        )}
         <AppNav
           tab={tab}
           goTab={goTab}
@@ -1864,7 +1945,7 @@ export default function App() {
         />
         <main className="dashboard">
           <h1>Choose your plan &amp; unlock advantages</h1>
-          <p className="tagline">Upgrade any time — cancel any time. Select a plan to upgrade instantly.</p>
+          <p className="tagline">Upgrade any time — cancel any time. Select a plan to enter payment details &amp; upgrade.</p>
 
           <div className="plan-grid" style={{ marginTop: 24 }}>
             {PLANS.map((p) => (
@@ -1908,6 +1989,20 @@ export default function App() {
             onClose={() => setShowKeyModal(false)}
           />
         )}
+        {selectedPlanForCheckout && (
+          <PaymentCheckoutModal
+            plan={selectedPlanForCheckout}
+            onClose={() => setSelectedPlanForCheckout(null)}
+            onPaymentSuccess={({ planName, subscriptionId }) => {
+              setCurrentPlan({ id: selectedPlanForCheckout.id, name: planName });
+              setConfirmedSub({ planName, subscriptionId });
+              setSelectedPlanForCheckout(null);
+              setTabRaw("payment-confirmed");
+              if (token) refreshEntitlements(token);
+            }}
+            onStripeCheckout={handleStripeCheckout}
+          />
+        )}
         <AppNav
           tab={tab}
           goTab={goTab}
@@ -1925,7 +2020,7 @@ export default function App() {
           {confirmedSub?.subscriptionId && (
             <p className="tool-trace">Subscription ID: {confirmedSub.subscriptionId}</p>
           )}
-          <div className="hero-cta" style={{ marginTop: 24 }}>
+          <div className="hero-cta" style={{ marginTop: 24, gap: 12 }}>
             <button
               type="button"
               className="btn-primary"
@@ -1941,6 +2036,14 @@ export default function App() {
               aria-label="Open ThreatLens Console"
             >
               Open Console
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => goTab("payment")}
+              aria-label="Manage Payment & Subscriptions"
+            >
+              Manage Payment Details
             </button>
           </div>
         </main>
@@ -1970,6 +2073,60 @@ export default function App() {
           <p className="tagline">
             {authUser?.email} {authUser?.companyName ? `· ${authUser.companyName}` : ""} · <strong>{currentPlan?.name || "Solo Founder"}</strong> plan active
           </p>
+
+          {/* JWT Account Access & Session Token Panel */}
+          <div style={{ background: "var(--panel-raised)", border: "1px solid var(--line-bright)", borderRadius: 16, padding: 20, marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 20 }}>🔑</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, color: "var(--paper)" }}>JWT Account Access &amp; Session Security</h3>
+                  <span style={{ fontSize: 12, color: "var(--dim)" }}>Bearer token authorization for API endpoints &amp; account telemetry</span>
+                </div>
+              </div>
+              <span style={{ fontSize: 11, padding: "4px 10px", background: "rgba(16,185,129,0.15)", color: "#10b981", borderRadius: 6, fontWeight: 700, fontFamily: "var(--mono)" }}>
+                ✓ JWT SESSION ACTIVE
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 14 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 11, color: "var(--dim)", textTransform: "uppercase", marginBottom: 4 }}>Account Email</label>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--paper)", background: "var(--panel-dark)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--line)" }}>
+                  {authUser?.email || "founder@threatlens.io"}
+                </div>
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 11, color: "var(--dim)", textTransform: "uppercase", marginBottom: 4 }}>User ID (JWT Subject)</label>
+                <div style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--brand-orange)", background: "var(--panel-dark)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--line)" }}>
+                  {authUser?.userId || "demo_user_7f90a2"}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <label style={{ display: "block", fontSize: 11, color: "var(--dim)", textTransform: "uppercase", marginBottom: 4 }}>
+                Active JWT Bearer Authorization Token (Expires in 30 Days)
+              </label>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <div style={{ flex: 1, fontFamily: "var(--mono)", fontSize: 11, color: "var(--dim)", background: "var(--panel-dark)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--line)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {token ? `Bearer ${token}` : "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW1vX3VzZXJfN2Y5MGEyIiwiaWF0IjoxNzI2Njk4OTAwLCJleHAiOjE3MjkyOTA5MDB9..."}
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ fontSize: 12, padding: "8px 14px", whiteSpace: "nowrap" }}
+                  onClick={() => {
+                    const tokVal = token ? `Bearer ${token}` : "Bearer demo_token_active";
+                    navigator.clipboard.writeText(tokVal);
+                    alert("JWT Bearer Token copied to clipboard!");
+                  }}
+                >
+                  📋 Copy Token
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div style={{ background: "var(--panel-raised)", border: "1px solid var(--line)", borderRadius: 12, padding: 18, marginBottom: 24 }}>
             <strong style={{ fontSize: 14, color: "var(--paper)" }}>⚡ Test Plan Tier Advantages Live:</strong>

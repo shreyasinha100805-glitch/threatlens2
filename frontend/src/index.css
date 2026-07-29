@@ -3110,4 +3110,89 @@ a {
   color: var(--paper);
 }
 
+/* ---------- Payment Checkout Modal ---------- */
+.payment-checkout-modal {
+  animation: modalPop 0.25s ease-out;
+}
+
+.pm-tab-btn {
+  transition: all 0.2s ease;
+}
+
+.pm-tab-btn:hover {
+  border-color: var(--brand-orange, #ff6a3d) !important;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ---------- Glassmorphism & Animated Gradient Background ---------- */
+body {
+  background: radial-gradient(circle at 15% 15%, rgba(255, 106, 61, 0.15), transparent 45%),
+              radial-gradient(circle at 85% 85%, rgba(0, 242, 254, 0.15), transparent 45%),
+              linear-gradient(135deg, #07090e 0%, #0c1017 50%, #07090e 100%);
+  background-size: 200% 200%;
+  animation: gradientMeshShift 16s ease infinite;
+}
+
+@keyframes gradientMeshShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.glassmorphism-modal {
+  background: rgba(15, 20, 31, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ---------- Light Mode Theme ---------- */
+[data-theme="light"] {
+  --ink: #f8fafc;
+  --panel: rgba(255, 255, 255, 0.88);
+  --panel-solid: #ffffff;
+  --panel-raised: #f1f5f9;
+  --panel-hover: #e2e8f0;
+  --line: rgba(0, 0, 0, 0.09);
+  --line-bright: rgba(0, 0, 0, 0.18);
+
+  --paper: #0f172a;
+  --dim: #475569;
+  --faint: #64748b;
+
+  --bg: #f8fafc;
+  --muted: #475569;
+  --border: rgba(0, 0, 0, 0.09);
+  --text: #0f172a;
+}
+
+[data-theme="light"] body {
+  background: radial-gradient(circle at 15% 15%, rgba(255, 106, 61, 0.1), transparent 45%),
+              radial-gradient(circle at 85% 85%, rgba(0, 242, 254, 0.1), transparent 45%),
+              linear-gradient(135deg, #f8fafc 0%, #edf2f7 50%, #f8fafc 100%);
+  background-size: 200% 200%;
+}
+
+[data-theme="light"] .glassmorphism-modal {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .glass-panel {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
 
