@@ -15,9 +15,10 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
   onSendCopilotPrompt,
   onGenerateDiagram,
 }) => {
-  const [activeTab, setActiveTab] = useState<"copilot" | "feed" | "simulation" | "reports">("copilot");
+  const [activeTab, setActiveTab] = useState<"copilot" | "feed" | "intel" | "simulation" | "reports">("copilot");
   const [simScenario, setSimScenario] = useState<string>("Ransomware Outbreak");
   const [isSimulating, setIsSimulating] = useState(false);
+  const [simStep, setSimStep] = useState<number>(0);
   const [voiceSpeaking, setVoiceSpeaking] = useState(false);
 
   // Real-time live feed events state
@@ -45,42 +46,86 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const handleRunSimulation = async () => {
+  const handle15SecondSimulation = async () => {
     setIsSimulating(true);
     cyberAudio.playAlert();
-    cyberAudio.speak(`Initializing ThreatLens Simulation Center for ${simScenario}. Swarm agents engaged.`);
+    cyberAudio.speak("Initiating 15-second Ransomware Simulation flow. Multi-agent swarm executing.");
 
-    await new Promise((res) => setTimeout(res, 800));
-    onRunLiveDemo();
+    setSimStep(1); // Attacker detected
+    await new Promise((res) => setTimeout(res, 2200));
+
+    setSimStep(2); // Threat Agent analyzes
+    cyberAudio.playRadarPing();
+    await new Promise((res) => setTimeout(res, 2200));
+
+    setSimStep(3); // Diagram generated
+    const demoMermaid = `sequenceDiagram
+  autonumber
+  actor Attacker as TOR Exit (185.220.101.4)
+  participant Edge as Edge Firewall
+  participant Agent as ThreatLens Agent Swarm
+  participant Target as fileserver-01 (10.0.4.12)
+  Attacker->>Target: Ingress Ransomware Payload (T1486)
+  Target-->>Agent: High Entropy Alert Event
+  Agent->>Edge: 1-Click Isolation Rule Dispatched
+  Agent->>Agent: Circle USDC 1.0 Micropayment Settled`;
+    onGenerateDiagram(demoMermaid);
+    await new Promise((res) => setTimeout(res, 2200));
+
+    setSimStep(4); // Malware Agent responds
+    cyberAudio.playClick();
+    await new Promise((res) => setTimeout(res, 2200));
+
+    setSimStep(5); // Payment Agent settles 1 USDC
+    try {
+      circlePaymentEngine.executeAutonomousPayment("Payment Agent", 1.0, "15-Second Ransomware Simulation Fee", true);
+    } catch {}
+    await new Promise((res) => setTimeout(res, 2200));
+
+    setSimStep(6); // Report Agent exports PDF
+    cyberAudio.playSuccess();
+    generateIncidentPDF({ reportType: "Incident Report" });
+    cyberAudio.speak("Ransomware simulation flow complete. Report exported successfully.");
+
     setIsSimulating(false);
+    setSimStep(0);
+    onRunLiveDemo();
   };
 
-  const handleVoiceSummary = () => {
+  const handleVoiceCommand = (cmd: string) => {
     setVoiceSpeaking(true);
     cyberAudio.playClick();
-    cyberAudio.speak("ThreatLens Security Copilot online. 8 active threats detected across global vectors. 3 critical ransomware and exfiltration issues require immediate 1-click mitigation.");
-    setTimeout(() => setVoiceSpeaking(false), 5000);
+    if (cmd.includes("critical")) {
+      cyberAudio.speak("ThreatLens Voice Copilot: Showing 3 active critical ransomware and exfiltration incidents.");
+      onSendCopilotPrompt("Summarize all active critical severity security incidents.");
+    } else if (cmd.includes("summary")) {
+      cyberAudio.speak("ThreatLens Voice Copilot: Generating executive CISO summary report.");
+      generateIncidentPDF({ reportType: "Executive Summary" });
+    } else {
+      cyberAudio.speak("ThreatLens Voice Copilot online. Ready to analyze threats.");
+    }
+    setTimeout(() => setVoiceSpeaking(false), 4500);
   };
 
   const promptChips = [
-    { label: "> Summarize today's threats", prompt: "Summarize today's active security threats and risk scores." },
-    { label: "> Generate MITRE report", prompt: "Generate a detailed MITRE ATT&CK breakdown of active vectors." },
-    { label: "> Create attack diagram", prompt: "Create a Mermaid sequence diagram for the ransomware incident." },
-    { label: "> Execute mitigation", prompt: "Execute 1-click automated containment and network isolation." },
-    { label: "> Export SOC2 evidence", prompt: "Export SOC2 Type II compliance audit telemetry." },
+    { label: "Summarize threats", prompt: "Summarize today's active security threats and risk scores." },
+    { label: "Generate report", prompt: "Generate a detailed CISO executive security audit report." },
+    { label: "Run mitigation", prompt: "Execute 1-click automated containment and network isolation." },
+    { label: "Explain MITRE mapping", prompt: "Explain the MITRE ATT&CK techniques (T1486, T1068, T1041) mapped to our hosts." },
+    { label: "Export SOC2 evidence", prompt: "Export SOC2 Type II compliance audit telemetry." },
   ];
 
   return (
     <aside className="copilot-panel-wrapper glass-panel" style={{ borderRadius: 20, padding: 20, marginBottom: 24 }}>
-      {/* Top Header & Navigation Tabs */}
+      {/* Top Header & Quick Buttons */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🤖</span>
+          <span style={{ fontSize: 24 }}>🤖</span>
           <div>
             <h3 style={{ margin: 0, fontSize: 16, color: "var(--paper)", fontFamily: "var(--display)", fontWeight: 800 }}>
-              ThreatLens AI Copilot &amp; Command Center
+              ThreatLens Copilot &amp; SOC Sidebar
             </h3>
-            <span style={{ fontSize: 11, color: "var(--dim)" }}>Autonomous Multi-Agent SOC Automation</span>
+            <span style={{ fontSize: 11, color: "var(--dim)" }}>Persistent AI Security Intelligence</span>
           </div>
         </div>
 
@@ -88,25 +133,41 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
           <button
             type="button"
             className="btn-primary"
-            onClick={() => {
-              cyberAudio.playClick();
-              onRunLiveDemo();
-            }}
-            style={{ fontSize: 12, padding: "6px 14px", fontWeight: 700, borderRadius: 8 }}
+            disabled={isSimulating}
+            onClick={handle15SecondSimulation}
+            style={{ fontSize: 12, padding: "7px 14px", fontWeight: 800, borderRadius: 8 }}
           >
-            🚀 RUN LIVE INCIDENT DEMO
+            {isSimulating ? `⚡ Executing Step ${simStep}/6...` : "🚀 RUN RANSOMWARE SIMULATION"}
           </button>
 
           <button
             type="button"
             className="btn-secondary"
-            onClick={handleVoiceSummary}
-            style={{ fontSize: 12, padding: "6px 12px", borderRadius: 8 }}
+            onClick={() => handleVoiceCommand("critical")}
+            style={{ fontSize: 12, padding: "7px 12px", borderRadius: 8 }}
           >
-            {voiceSpeaking ? "🔊 Speaking..." : "🎙️ Voice Copilot"}
+            {voiceSpeaking ? "🔊 Speaking..." : "🎙️ Voice Command"}
           </button>
         </div>
       </div>
+
+      {/* 15-SECOND SIMULATION FLOW PROGRESS TRACKER */}
+      {isSimulating && (
+        <div className="sim-flow-tracker" style={{ background: "rgba(255,107,0,0.12)", border: "1px solid var(--brand-orange, #ff6a3d)", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--paper)", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+            <span>⚡ 15-Second Demo Flow Execution</span>
+            <span style={{ color: "var(--brand-orange, #ff6a3d)" }}>Step {simStep} of 6</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6, textAlign: "center", fontSize: 10 }}>
+            <div style={{ padding: 6, background: simStep >= 1 ? "#ff6a3d" : "var(--panel-dark)", color: simStep >= 1 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>1. Detect</div>
+            <div style={{ padding: 6, background: simStep >= 2 ? "#ff6a3d" : "var(--panel-dark)", color: simStep >= 2 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>2. Analyze</div>
+            <div style={{ padding: 6, background: simStep >= 3 ? "#ff6a3d" : "var(--panel-dark)", color: simStep >= 3 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>3. Diagram</div>
+            <div style={{ padding: 6, background: simStep >= 4 ? "#ff6a3d" : "var(--panel-dark)", color: simStep >= 4 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>4. Respond</div>
+            <div style={{ padding: 6, background: simStep >= 5 ? "#ff6a3d" : "var(--panel-dark)", color: simStep >= 5 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>5. Settle</div>
+            <div style={{ padding: 6, background: simStep >= 6 ? "#10b981" : "var(--panel-dark)", color: simStep >= 6 ? "#fff" : "var(--dim)", borderRadius: 6, fontWeight: 700 }}>6. Report</div>
+          </div>
+        </div>
+      )}
 
       {/* LIVE SOC TELEMETRY METRICS BAR */}
       <div className="soc-metrics-bar" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, background: "var(--panel-raised)", padding: 12, borderRadius: 12, marginBottom: 16, border: "1px solid var(--line)" }}>
@@ -132,75 +193,76 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
         </div>
       </div>
 
-      {/* AGENT-TO-AGENT SWARM COMMUNICATION FLOW */}
-      <div className="swarm-flow-card" style={{ background: "var(--panel-dark)", padding: "12px 16px", borderRadius: 12, marginBottom: 16, border: "1px solid var(--line)" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", marginBottom: 8 }}>
-          ⚡ Agent-to-Agent Swarm Orchestration Flow
-        </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 12, fontWeight: 600 }}>
-          <span style={{ padding: "4px 10px", background: "rgba(0, 242, 254, 0.15)", color: "var(--cyan)", borderRadius: 6 }}>
-            Threat Agent
-          </span>
-          <span style={{ color: "var(--brand-orange, #ff6a3d)", fontSize: 14 }}>➔</span>
-          <span style={{ padding: "4px 10px", background: "rgba(239, 68, 68, 0.15)", color: "#f87171", borderRadius: 6 }}>
-            Malware Agent
-          </span>
-          <span style={{ color: "var(--brand-orange, #ff6a3d)", fontSize: 14 }}>➔</span>
-          <span style={{ padding: "4px 10px", background: "rgba(255, 107, 0, 0.15)", color: "var(--brand-orange, #ff6a3d)", borderRadius: 6 }}>
-            Payment Agent
-          </span>
-          <span style={{ color: "var(--brand-orange, #ff6a3d)", fontSize: 14 }}>➔</span>
-          <span style={{ padding: "4px 10px", background: "rgba(16, 185, 129, 0.15)", color: "#10b981", borderRadius: 6 }}>
-            Report Agent
-          </span>
-        </div>
-      </div>
-
       {/* Navigation Sub-Tabs */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 14, borderBottom: "1px solid var(--line)", paddingBottom: 10 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, borderBottom: "1px solid var(--line)", paddingBottom: 10, overflowX: "auto" }}>
         <button
           type="button"
           className={`tab-btn ${activeTab === "copilot" ? "active" : ""}`}
           onClick={() => setActiveTab("copilot")}
-          style={{ background: "none", border: "none", color: activeTab === "copilot" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: activeTab === "copilot" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          🤖 Copilot Prompts
+          🤖 Copilot
+        </button>
+
+        <button
+          type="button"
+          className={`tab-btn ${activeTab === "intel" ? "active" : ""}`}
+          onClick={() => setActiveTab("intel")}
+          style={{ background: "none", border: "none", color: activeTab === "intel" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          🌐 Threat Intel
         </button>
 
         <button
           type="button"
           className={`tab-btn ${activeTab === "feed" ? "active" : ""}`}
           onClick={() => setActiveTab("feed")}
-          style={{ background: "none", border: "none", color: activeTab === "feed" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: activeTab === "feed" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          📡 Real-Time Live Feed
+          📡 Live Feed
         </button>
 
         <button
           type="button"
           className={`tab-btn ${activeTab === "simulation" ? "active" : ""}`}
           onClick={() => setActiveTab("simulation")}
-          style={{ background: "none", border: "none", color: activeTab === "simulation" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: activeTab === "simulation" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          🎯 Simulation Center
+          🎯 Simulation
         </button>
 
         <button
           type="button"
           className={`tab-btn ${activeTab === "reports" ? "active" : ""}`}
           onClick={() => setActiveTab("reports")}
-          style={{ background: "none", border: "none", color: activeTab === "reports" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+          style={{ background: "none", border: "none", color: activeTab === "reports" ? "var(--brand-orange, #ff6a3d)" : "var(--dim)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          📄 PDF Enterprise Exports
+          📄 Exports
         </button>
       </div>
 
-      {/* Tab 1: AI Copilot Prompt Chips */}
+      {/* Tab 1: ThreatLens Copilot Quick Action Chips */}
       {activeTab === "copilot" && (
         <div>
-          <p style={{ fontSize: 12, color: "var(--dim)", marginBottom: 10 }}>
-            Click any instant action chip to direct the ThreatLens AI Copilot:
-          </p>
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ fontSize: 11, padding: "4px 8px" }}
+              onClick={() => handleVoiceCommand("critical")}
+            >
+              "Show critical incidents"
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ fontSize: 11, padding: "4px 8px" }}
+              onClick={() => handleVoiceCommand("summary")}
+            >
+              "Generate executive summary"
+            </button>
+          </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {promptChips.map((chip) => (
               <button
@@ -228,7 +290,7 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
                   alignItems: "center",
                 }}
               >
-                <span>{chip.label}</span>
+                <span>• {chip.label}</span>
                 <span style={{ fontSize: 11, color: "var(--brand-orange, #ff6a3d)" }}>RUN ➔</span>
               </button>
             ))}
@@ -236,7 +298,50 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
         </div>
       )}
 
-      {/* Tab 2: Real-Time Live Feed */}
+      {/* Tab 2: REAL THREAT INTELLIGENCE INTEGRATIONS CARD */}
+      {activeTab === "intel" && (
+        <div style={{ background: "var(--panel-dark)", padding: 14, borderRadius: 12, border: "1px solid var(--line)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--paper)" }}>Live Threat Intel Feed</span>
+            <span style={{ fontSize: 10, padding: "2px 6px", background: "rgba(239, 68, 68, 0.2)", color: "#ef4444", borderRadius: 4, fontWeight: 700 }}>
+              MALICIOUS (97%)
+            </span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 12, marginBottom: 10, fontFamily: "var(--mono)" }}>
+            <div>
+              <span style={{ color: "var(--dim)", fontSize: 10, display: "block" }}>TARGET IP</span>
+              <strong style={{ color: "var(--cyan)" }}>185.220.101.4</strong>
+            </div>
+            <div>
+              <span style={{ color: "var(--dim)", fontSize: 10, display: "block" }}>LOCATION</span>
+              <strong style={{ color: "var(--paper)" }}>Germany 🇩🇪</strong>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 11, color: "var(--dim)", marginBottom: 8, fontWeight: 600 }}>Active Security Feeds:</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--panel-solid)", borderRadius: 6 }}>
+              <span>VirusTotal</span>
+              <strong style={{ color: "#ef4444" }}>48/72 Engines Flagged</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--panel-solid)", borderRadius: 6 }}>
+              <span>AbuseIPDB</span>
+              <strong style={{ color: "#ef4444" }}>97% Confidence Score</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--panel-solid)", borderRadius: 6 }}>
+              <span>Shodan</span>
+              <strong style={{ color: "var(--paper)" }}>Ports 22, 80, 443, 8080 Open</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "var(--panel-solid)", borderRadius: 6 }}>
+              <span>Google Threat Intel</span>
+              <strong style={{ color: "#ef4444" }}>Active C2 Ransomware Hub</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: Real-Time Live Feed */}
       {activeTab === "feed" && (
         <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
           {feedEvents.map((ev) => (
@@ -245,7 +350,7 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
+                gap: 10,
                 padding: "8px 12px",
                 background: "var(--panel-dark)",
                 borderRadius: 8,
@@ -261,7 +366,7 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
         </div>
       )}
 
-      {/* Tab 3: ThreatLens Simulation Center */}
+      {/* Tab 4: Simulation Center */}
       {activeTab === "simulation" && (
         <div>
           <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--paper)", marginBottom: 8 }}>
@@ -292,7 +397,7 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
             type="button"
             className="btn-primary"
             disabled={isSimulating}
-            onClick={handleRunSimulation}
+            onClick={handle15SecondSimulation}
             style={{ width: "100%", padding: "12px", fontSize: 14, fontWeight: 800 }}
           >
             {isSimulating ? "⚡ Simulating Attack..." : `⚡ START ${simScenario.toUpperCase()} SIMULATION`}
@@ -300,7 +405,7 @@ export const ThreatLensCopilotPanel: React.FC<ThreatLensCopilotPanelProps> = ({
         </div>
       )}
 
-      {/* Tab 4: PDF Enterprise Exports */}
+      {/* Tab 5: PDF Enterprise Exports */}
       {activeTab === "reports" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {[

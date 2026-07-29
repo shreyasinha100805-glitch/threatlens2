@@ -3196,3 +3196,30 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
+/* ---------- 2-Column Enterprise Grid Layout ---------- */
+.app-shell-layout {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 24px;
+  max-width: 1700px;
+  margin: 0 auto;
+  padding: 20px 24px 40px;
+  align-items: start;
+}
+
+.copilot-sidebar-sticky {
+  position: sticky;
+  top: 90px;
+  z-index: 10;
+}
+
+@media (max-width: 1280px) {
+  .app-shell-layout {
+    grid-template-columns: 1fr;
+  }
+  .copilot-sidebar-sticky {
+    position: static;
+  }
+}
+
+

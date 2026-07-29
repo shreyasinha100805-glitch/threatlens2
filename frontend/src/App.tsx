@@ -1776,88 +1776,96 @@ export default function App() {
           geminiKey={geminiKey}
           onOpenGeminiModal={() => setShowKeyModal(true)}
         />
-        <main className="dashboard">
-          <h1>Welcome{authUser?.companyName ? `, ${authUser.companyName}` : ""}.</h1>
-          <p className="tagline">{authUser?.email}</p>
+        <div className="app-shell-layout">
+          <main className="dashboard">
+            <h1>Welcome{authUser?.companyName ? `, ${authUser.companyName}` : ""}.</h1>
+            <p className="tagline">{authUser?.email}</p>
 
-          {/* AI COPILOT & COMMAND CENTER PANEL */}
-          <ThreatLensCopilotPanel
-            onRunLiveDemo={runLiveIncidentDemo}
-            onSendCopilotPrompt={(prompt) => {
-              goTab("console");
-              send(prompt);
-            }}
-            onGenerateDiagram={(code) => {
-              setActiveMermaidCode(code);
-              goTab("diagrams");
-            }}
-          />
-
-          {/* Tactical Cyber Threat Radar Visualization Map */}
-          <ThreatRadarMap threats={threats} onSelectThreat={(t) => setSelectedThreat(t)} />
-
-          <div className="stat-grid">
-            <div className="stat">
-              <div className="n">{threats.length}</div>
-              <div className="l">Open high/critical threats</div>
+            <div className="plan-banner success" style={{ margin: "18px 0" }}>
+              ✓ Active Plan Tier: <strong>{currentPlan?.name || "Solo Founder"}</strong>. {isPaid ? "You have UNLIMITED queries, 1-click mitigation, and Slack alerts active." : "Metered access (50 queries/mo). Upgrade for unlimited advantages."}
             </div>
-            <div className="stat">
-              <div className="n">{isPaid ? "∞ Unlimited" : usage ? `${usage.count}/${usage.limit}` : "3/50"}</div>
-              <div className="l">Queries used this month</div>
+
+            {/* Tactical Cyber Threat Radar Visualization Map */}
+            <ThreatRadarMap threats={threats} onSelectThreat={(t) => setSelectedThreat(t)} />
+
+            <div className="stat-grid">
+              <div className="stat">
+                <div className="n">{threats.length}</div>
+                <div className="l">Open high/critical threats</div>
+              </div>
+              <div className="stat">
+                <div className="n">{isPaid ? "∞ Unlimited" : usage ? `${usage.count}/${usage.limit}` : "3/50"}</div>
+                <div className="l">Queries used this month</div>
+              </div>
+              <div className="stat">
+                <div className="n">{isPaid ? "Active" : "Locked"}</div>
+                <div className="l">Slack alerts + 1-click mitigation</div>
+              </div>
             </div>
-            <div className="stat">
-              <div className="n">{isPaid ? "Active" : "Locked"}</div>
-              <div className="l">Slack alerts + 1-click mitigation</div>
+
+            <div className="dashboard-grid">
+              <button
+                type="button"
+                className="dashboard-card"
+                onClick={() => goTab("console")}
+                aria-label="Open Console"
+              >
+                <strong>Open Console</strong>
+                <span>Ask ThreatLens about active threats, IPs, or remediation steps.</span>
+              </button>
+
+              <button
+                type="button"
+                className="dashboard-card"
+                onClick={() => goTab("diagrams")}
+                aria-label="Open Security Diagram Studio"
+              >
+                <strong>📊 Security Diagram Studio</strong>
+                <span>Generate visual attack sequence diagrams &amp; topology maps.</span>
+              </button>
+
+              <button
+                type="button"
+                className="dashboard-card"
+                onClick={() => goTab("payment")}
+                aria-label={isPaid ? "Manage plan advantages" : "Upgrade plan for advantages"}
+              >
+                <strong>{isPaid ? "Manage plan advantages" : "Upgrade plan advantages"}</strong>
+                <span>{isPaid ? "Explore your unlocked Early Team / Scaling Up perks." : "Unlock unlimited queries, 1-click mitigation, and Slack alerts."}</span>
+              </button>
             </div>
-          </div>
 
-          <div className="dashboard-grid">
-            <button
-              type="button"
-              className="dashboard-card"
-              onClick={() => goTab("console")}
-              aria-label="Open Console"
-            >
-              <strong>Open Console</strong>
-              <span>Ask ThreatLens about active threats, IPs, or remediation steps.</span>
-            </button>
+            {/* Autonomous Payment Engine Widget */}
+            <AutonomousPaymentWidget
+              onViewTransactions={() => goTab("transactions")}
+              onPaymentTriggered={() => handleAgentAction("Payment Agent", "settled 1 USDC autonomous micropayment", 1.0)}
+            />
 
-            <button
-              type="button"
-              className="dashboard-card"
-              onClick={() => goTab("diagrams")}
-              aria-label="Open Security Diagram Studio"
-            >
-              <strong>📊 Security Diagram Studio</strong>
-              <span>Generate visual attack sequence diagrams & topology maps.</span>
-            </button>
+            {/* Multi-Agent Swarm Cards */}
+            <MultiAgentCards onAgentAction={handleAgentAction} />
 
-            <button
-              type="button"
-              className="dashboard-card"
-              onClick={() => goTab("payment")}
-              aria-label={isPaid ? "Manage plan advantages" : "Upgrade plan for advantages"}
-            >
-              <strong>{isPaid ? "Manage plan advantages" : "Upgrade plan advantages"}</strong>
-              <span>{isPaid ? "Explore your unlocked Early Team / Scaling Up perks." : "Unlock unlimited queries, 1-click mitigation, and Slack alerts."}</span>
-            </button>
-          </div>
+            {/* Agent Activity Timeline */}
+            <AgentActivityTimeline events={timelineEvents} />
 
-          {/* Autonomous Payment Engine Widget */}
-          <AutonomousPaymentWidget
-            onViewTransactions={() => goTab("transactions")}
-            onPaymentTriggered={() => handleAgentAction("Payment Agent", "settled 1 USDC autonomous micropayment", 1.0)}
-          />
+            {/* Threat Heatmap Visual Analytics */}
+            <ThreatHeatmap />
+          </main>
 
-          {/* Multi-Agent Swarm Cards */}
-          <MultiAgentCards onAgentAction={handleAgentAction} />
+          <aside className="copilot-sidebar-sticky">
+            <ThreatLensCopilotPanel
+              onRunLiveDemo={runLiveIncidentDemo}
+              onSendCopilotPrompt={(prompt) => {
+                goTab("console");
+                send(prompt);
+              }}
+              onGenerateDiagram={(code) => {
+                setActiveMermaidCode(code);
+                goTab("diagrams");
+              }}
+            />
+          </aside>
+        </div>
 
-          {/* Agent Activity Timeline */}
-          <AgentActivityTimeline events={timelineEvents} />
-
-          {/* Threat Heatmap Visual Analytics */}
-          <ThreatHeatmap />
-        </main>
       </div>
     );
   }
