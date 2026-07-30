@@ -501,17 +501,24 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                     type="button"
                     onClick={() => onStripeCheckout(plan.id)}
                     style={{
-                      background: "none",
-                      border: "none",
-                      color: "var(--dim)",
-                      fontSize: 12,
-                      textDecoration: "underline",
+                      background: "linear-gradient(135deg, #635bff 0%, #4b45e4 100%)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      color: "#ffffff",
+                      fontSize: 14,
+                      fontWeight: 700,
+                      padding: "12px",
+                      borderRadius: 12,
                       cursor: "pointer",
                       textAlign: "center",
-                      marginTop: 4,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 8,
+                      boxShadow: "0 4px 14px rgba(99, 91, 255, 0.3)",
+                      transition: "transform 0.15s ease, box-shadow 0.15s ease",
                     }}
                   >
-                    Or redirect to external Stripe Checkout hosted page
+                    💳 Pay via Hosted Stripe Checkout Page →
                   </button>
                 )}
               </div>

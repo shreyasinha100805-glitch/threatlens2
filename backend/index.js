@@ -9,7 +9,7 @@ const { GenAIClient } = require("./genaiClient");
 const { AgentTools } = require("./tools");
 const { Agent } = require("./agent");
 const { MongoMCPServer } = require("./mongoMCP");
-const { getPlans, createCheckoutSession, verifyCheckoutSession } = require("./billing");
+const { PLANS, getPlans, createCheckoutSession, verifyCheckoutSession } = require("./billing");
 const { Waitlist } = require("./waitlist");
 const { Entitlements, FREE_MONTHLY_QUERY_LIMIT } = require("./entitlements");
 const { sendSlackAlert, extractHighSeverityEvents } = require("./alerts");
@@ -216,8 +216,9 @@ async function main() {
           },
           { upsert: true }
         );
-        if (result.clientId) {
-          await entitlements.setPlan(result.clientId, {
+        const targetClientId = result.clientId || clientIdOf(req);
+        if (targetClientId) {
+          await entitlements.setPlan(targetClientId, {
             planId: result.planId,
             planName: result.planName,
             subscriptionId: result.subscriptionId,
@@ -239,6 +240,24 @@ async function main() {
         .sort({ createdAt: -1 })
         .toArray();
       res.json({ count: subs.length, subscriptions: subs });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Direct endpoint to update or set plan entitlement (e.g. manual payment or switching)
+  app.post("/entitlements/plan", requireAuth, async (req, res) => {
+    const { planId, planName, subscriptionId } = req.body || {};
+    if (!planId) return res.status(400).json({ error: "planId is required" });
+    try {
+      const clientId = clientIdOf(req);
+      const name = planName || (PLANS[planId] ? PLANS[planId].name : planId);
+      await entitlements.setPlan(clientId, {
+        planId,
+        planName: name,
+        subscriptionId: subscriptionId || `sub_direct_${Date.now()}`,
+      });
+      res.json({ ok: true, planId, planName: name });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -289,7 +308,7 @@ async function main() {
   app.get("/billing/evidence-export", requireAuth, async (req, res) => {
     try {
       const clientId = clientIdOf(req);
-      await entitlements.requirePlan(clientId, "scaling_up", "Evidence export");
+      await entitlements.requirePlan(clientId, "early_team", "Evidence export");
 
       const format = req.query.format === "json" ? "json" : "csv";
       const entries = await auditLog.find({}, { projection: { _id: 0 } }).sort({ timestamp: -1 }).limit(5000).toArray();

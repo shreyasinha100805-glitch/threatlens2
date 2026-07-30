@@ -1083,9 +1083,10 @@ export default function App() {
   function goTab(t: Tab) {
     if (PROTECTED_TABS.includes(t) && !token) {
       setTabRaw("login");
-      return;
+    } else {
+      setCheckoutError("");
+      setTabRaw(t);
     }
-    setTabRaw(t);
   }
 
   function logout() {
@@ -1140,8 +1141,10 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
     const sessionId = params.get("session_id");
+    if (checkout !== "success" || !sessionId) return;
+    if (!token) return; // Wait until token is loaded before processing redirect and clearing URL
+
     window.history.replaceState({}, "", window.location.pathname);
-    if (checkout !== "success" || !sessionId || !token) return;
 
     apiFetch(`/billing/session/${sessionId}`, { headers: authHeaders(token, geminiKey) })
       .then(({ ok, data }) => {
@@ -1150,6 +1153,8 @@ export default function App() {
           setConfirmedSub({ planName: data.planName, subscriptionId: data.subscriptionId });
           setTabRaw("payment-confirmed");
           refreshEntitlements(token);
+        } else if (data?.error) {
+          setCheckoutError(`Stripe verification: ${data.error}`);
         }
       })
       .catch(() => {});
@@ -1262,7 +1267,12 @@ export default function App() {
   }
 
   async function handleStripeCheckout(planId: string) {
-    if (!token) return;
+    if (!token) {
+      alert("Please log in or sign up to upgrade your plan.");
+      setTabRaw("signup");
+      return;
+    }
+    setCheckoutStatus((prev) => ({ ...prev, [planId]: "loading" }));
     try {
       const { ok, data } = await apiFetch("/billing/checkout", {
         method: "POST",
@@ -1272,10 +1282,16 @@ export default function App() {
       if (ok && data?.url) {
         window.location.href = data.url;
       } else {
-        alert("Stripe external server is not configured in this demo environment. Please use the Credit Card or Circle USDC payment form in the modal.");
+        const errMsg = data?.error || "Failed to create Stripe checkout session.";
+        setCheckoutError(errMsg);
+        alert(errMsg);
       }
-    } catch {
-      alert("Stripe external server is not configured in this demo environment. Please use the Credit Card or Circle USDC payment form in the modal.");
+    } catch (err: any) {
+      const errMsg = err?.message || "Failed to connect to checkout service.";
+      setCheckoutError(errMsg);
+      alert(errMsg);
+    } finally {
+      setCheckoutStatus((prev) => ({ ...prev, [planId]: "idle" }));
     }
   }
 
@@ -1407,8 +1423,8 @@ export default function App() {
   }
 
   function downloadEvidenceExport() {
-    if (currentPlan?.id !== "scaling_up") {
-      setCheckoutError("🔒 SOC2 CSV Evidence Export is an exclusive advantage of Scaling Up ($199/mo). Upgrade to download.");
+    if (!isPaid) {
+      setCheckoutError("🔒 SOC2 CSV Evidence Export requires a paid plan (Early Team or Scaling Up).");
       return;
     }
     fetch("/billing/evidence-export?format=csv", { headers: authHeaders(token, geminiKey) })
@@ -1831,7 +1847,7 @@ export default function App() {
                 aria-label={isPaid ? "Manage plan advantages" : "Upgrade plan for advantages"}
               >
                 <strong>{isPaid ? "Manage plan advantages" : "Upgrade plan advantages"}</strong>
-                <span>{isPaid ? "Explore your unlocked Early Team / Scaling Up perks." : "Unlock unlimited queries, 1-click mitigation, and Slack alerts."}</span>
+                <span>{isPaid ? `Active Tier: ${currentPlan?.name || "Paid Plan"}. Explore your unlocked advantages.` : "Unlock unlimited queries, 1-click mitigation, and Slack alerts."}</span>
               </button>
             </div>
 
@@ -1934,12 +1950,23 @@ export default function App() {
           <PaymentCheckoutModal
             plan={selectedPlanForCheckout}
             onClose={() => setSelectedPlanForCheckout(null)}
-            onPaymentSuccess={({ planName, subscriptionId }) => {
-              setCurrentPlan({ id: selectedPlanForCheckout.id, name: planName });
+            onPaymentSuccess={async ({ planName, subscriptionId }) => {
+              const planObj = PLANS.find((p) => p.name === planName || p.id === selectedPlanForCheckout.id);
+              const planId = planObj?.id || selectedPlanForCheckout.id;
+              setCurrentPlan({ id: planId, name: planName });
               setConfirmedSub({ planName, subscriptionId });
               setSelectedPlanForCheckout(null);
               setTabRaw("payment-confirmed");
-              if (token) refreshEntitlements(token);
+              if (token) {
+                try {
+                  await apiFetch("/entitlements/plan", {
+                    method: "POST",
+                    headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
+                    body: JSON.stringify({ planId, planName, subscriptionId }),
+                  });
+                  refreshEntitlements(token);
+                } catch {}
+              }
             }}
             onStripeCheckout={handleStripeCheckout}
           />
@@ -2001,12 +2028,23 @@ export default function App() {
           <PaymentCheckoutModal
             plan={selectedPlanForCheckout}
             onClose={() => setSelectedPlanForCheckout(null)}
-            onPaymentSuccess={({ planName, subscriptionId }) => {
-              setCurrentPlan({ id: selectedPlanForCheckout.id, name: planName });
+            onPaymentSuccess={async ({ planName, subscriptionId }) => {
+              const planObj = PLANS.find((p) => p.name === planName || p.id === selectedPlanForCheckout.id);
+              const planId = planObj?.id || selectedPlanForCheckout.id;
+              setCurrentPlan({ id: planId, name: planName });
               setConfirmedSub({ planName, subscriptionId });
               setSelectedPlanForCheckout(null);
               setTabRaw("payment-confirmed");
-              if (token) refreshEntitlements(token);
+              if (token) {
+                try {
+                  await apiFetch("/entitlements/plan", {
+                    method: "POST",
+                    headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
+                    body: JSON.stringify({ planId, planName, subscriptionId }),
+                  });
+                  refreshEntitlements(token);
+                } catch {}
+              }
             }}
             onStripeCheckout={handleStripeCheckout}
           />
@@ -2023,7 +2061,9 @@ export default function App() {
           <h1>Payment Confirmed! Plan Advantages Unlocked</h1>
           <p className="tagline">
             You're now on the <strong>{confirmedSub?.planName || currentPlan?.name}</strong> plan.
-            Your plan advantages (unlimited queries, Slack alerting, 1-click mitigation, and SOC2 audit exports) are fully active.
+            {(confirmedSub?.planName === "Scaling Up" || currentPlan?.id === "scaling_up")
+              ? " Your plan advantages (unlimited queries, Slack alerting, 1-click mitigation, SOC2 CSV audit exports, and automated incident response playbooks) are fully active."
+              : " Your plan advantages (unlimited queries, up to 8 seats, Slack webhook alerting, 1-click mitigation, priority threat flagging, and full MITRE ATT&CK taxonomy mapping) are fully active."}
           </p>
           {confirmedSub?.subscriptionId && (
             <p className="tool-trace">Subscription ID: {confirmedSub.subscriptionId}</p>
@@ -2213,9 +2253,9 @@ export default function App() {
             <div className="facility-row">
               <div>
                 <strong>SOC2 CSV Evidence Audit Export</strong>
-                <div className="tool-trace">Download structured CSV audit trail of every agent tool call executed — Scaling Up tier exclusive.</div>
+                <div className="tool-trace">Download structured CSV audit trail of every agent tool call executed — Unlocked for Early Team &amp; Scaling Up.</div>
               </div>
-              {currentPlan?.id === "scaling_up" ? (
+              {isPaid ? (
                 <button
                   type="button"
                   className="facility-action"
@@ -2230,7 +2270,7 @@ export default function App() {
                   className="facility-action-disabled"
                   onClick={downloadEvidenceExport}
                 >
-                  🔒 Scaling Up Only
+                  🔒 Paid Plan Required
                 </button>
               )}
             </div>
