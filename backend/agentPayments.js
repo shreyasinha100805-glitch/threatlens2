@@ -1,4 +1,4 @@
-// circlePayments.js
+// agentPayments.js
 // Circle Developer Wallet & x402 Autonomous Micropayments Engine
 // Supports testnet USDC transfers (Solana/Polygon/Ethereum testnet)
 
@@ -65,7 +65,6 @@ function processPayment(agent, amountUsdc, description) {
     throw new Error(`Insufficient wallet balance. Requested: ${amountUsdc} USDC, Available: ${walletState.balanceUsdc} USDC.`);
   }
 
-  // Deduct balance and update metrics
   walletState.balanceUsdc = parseFloat((walletState.balanceUsdc - amountUsdc).toFixed(2));
   walletState.spentTodayUsdc = parseFloat((walletState.spentTodayUsdc + amountUsdc).toFixed(2));
   walletState.transactionsTodayCount += 1;

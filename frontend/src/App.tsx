@@ -13,6 +13,7 @@ import { PaymentCheckoutModal, Plan } from "./PaymentCheckoutModal";
 import { ConfettiEffect } from "./ConfettiEffect";
 import { ThreatLensCopilotPanel } from "./ThreatLensCopilotPanel";
 import circlePaymentEngine from "./circlePaymentEngine";
+import { generateIncidentPDF } from "./pdfReportGenerator";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -615,6 +616,49 @@ function AppNav({
   );
 }
 
+/** Hackathon Demo — Live Threat Attack Simulator Card */
+function AttackSimulatorCard({ onSimulate }: { onSimulate: (type: "ransomware" | "bruteforce" | "exfiltration") => void }) {
+  return (
+    <div className="attack-simulator-card">
+      <div className="simulator-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="live-pulse-dot" />
+          <h3 style={{ margin: 0, fontSize: 16, color: "var(--paper)", fontWeight: 700 }}>
+            ⚡ Live Hackathon Threat Simulator
+          </h3>
+        </div>
+        <span className="xprize-badge">Build with Gemini XPRIZE</span>
+      </div>
+      <p style={{ fontSize: 13, color: "var(--dim)", margin: "8px 0 14px 0", lineHeight: 1.5 }}>
+        Test ThreatLens in real-time. Trigger a simulated attack to watch Google Gemini 2.5 Flash analyze telemetry, map MITRE ATT&CK vectors, and offer 1-click incident containment.
+      </p>
+      <div className="simulator-actions">
+        <button
+          type="button"
+          className="sim-btn sim-ransomware"
+          onClick={() => onSimulate("ransomware")}
+        >
+          🚨 Simulate LockBit 3.0 Ransomware
+        </button>
+        <button
+          type="button"
+          className="sim-btn sim-bruteforce"
+          onClick={() => onSimulate("bruteforce")}
+        >
+          🔑 Simulate SSH Brute-Force Botnet
+        </button>
+        <button
+          type="button"
+          className="sim-btn sim-exfiltration"
+          onClick={() => onSimulate("exfiltration")}
+        >
+          🗄️ Simulate Database Exfiltration
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Tier Advantage Comparison Matrix Table */
 function PlanComparisonMatrix() {
   const features = [
@@ -1036,6 +1080,64 @@ export default function App() {
   Agent->>Edge: 1-Click Isolation Rule Dispatched
   Agent->>Agent: Circle USDC 1.0 Micropayment Settled`;
     setActiveMermaidCode(demoMermaid);
+  };
+
+  const handleSimulateAttack = (type: "ransomware" | "bruteforce" | "exfiltration") => {
+    cyberAudio.playAlert();
+    let newThreat: ThreatEvent;
+
+    if (type === "ransomware") {
+      newThreat = {
+        eventId: `EVT-LOCKBIT-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: new Date().toISOString(),
+        severity: "critical",
+        eventType: "ransomware_payload_executed",
+        sourceIp: "185.220.101.4",
+        targetHost: "fileserver-01.prod",
+        description: "LockBit 3.0 volume shadow copy deletion & mass file encryption detected (T1486)",
+        riskScore: 99,
+        mitreTactic: "Impact",
+        mitreTechnique: "T1486 - Data Encrypted for Impact",
+        status: "Action Required",
+      };
+      cyberAudio.speak("Critical LockBit 3.0 Ransomware payload detected on fileserver-01.");
+      handleAgentAction("Malware Agent", "flagged LockBit 3.0 ransomware surge on fileserver-01.prod", 1.0);
+    } else if (type === "bruteforce") {
+      newThreat = {
+        eventId: `EVT-BRUTE-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: new Date().toISOString(),
+        severity: "high",
+        eventType: "ssh_brute_force_botnet",
+        sourceIp: "45.142.214.19",
+        targetHost: "auth-gateway-01",
+        description: "Distributed SSH brute-force botnet attack (14,200 failed auth attempts/min)",
+        riskScore: 88,
+        mitreTactic: "Credential Access",
+        mitreTechnique: "T1110.001 - Password Guessing",
+        status: "Action Required",
+      };
+      cyberAudio.speak("High severity SSH brute-force botnet detected from IP 45.142.214.19.");
+      handleAgentAction("Threat Agent", "detected SSH brute force botnet attempt against auth-gateway-01", 0.5);
+    } else {
+      newThreat = {
+        eventId: `EVT-EXFIL-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: new Date().toISOString(),
+        severity: "critical",
+        eventType: "database_exfiltration_anomaly",
+        sourceIp: "103.224.182.9",
+        targetHost: "db-prod-primary",
+        description: "Unusual 14.8 GB outbound SQL dump transfer to unauthorized external IP (T1041)",
+        riskScore: 96,
+        mitreTactic: "Exfiltration",
+        mitreTechnique: "T1041 - Exfiltration Over C2 Channel",
+        status: "Action Required",
+      };
+      cyberAudio.speak("Critical database exfiltration anomaly detected on primary database.");
+      handleAgentAction("Report Agent", "flagged 14.8 GB database exfiltration anomaly", 1.0);
+    }
+
+    setThreats((prev) => [newThreat, ...prev]);
+    setSelectedThreat(newThreat);
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -1794,12 +1896,27 @@ export default function App() {
         />
         <div className="app-shell-layout">
           <main className="dashboard">
-            <h1>Welcome{authUser?.companyName ? `, ${authUser.companyName}` : ""}.</h1>
-            <p className="tagline">{authUser?.email}</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <h1 style={{ margin: 0 }}>Welcome{authUser?.companyName ? `, ${authUser.companyName}` : ""}.</h1>
+                <p className="tagline" style={{ margin: "4px 0 0 0" }}>{authUser?.email}</p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => generateIncidentPDF({ reportType: "Executive Summary" })}
+                style={{ gap: 6, fontSize: 12, padding: "8px 14px" }}
+              >
+                📄 Export Executive PDF Security Audit
+              </button>
+            </div>
 
             <div className="plan-banner success" style={{ margin: "18px 0" }}>
               ✓ Active Plan Tier: <strong>{currentPlan?.name || "Solo Founder"}</strong>. {isPaid ? "You have UNLIMITED queries, 1-click mitigation, and Slack alerts active." : "Metered access (50 queries/mo). Upgrade for unlimited advantages."}
             </div>
+
+            {/* Hackathon Demo — Live Attack Simulator */}
+            <AttackSimulatorCard onSimulate={handleSimulateAttack} />
 
             {/* Tactical Cyber Threat Radar Visualization Map */}
             <ThreatRadarMap threats={threats} onSelectThreat={(t) => setSelectedThreat(t)} />

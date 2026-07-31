@@ -14,8 +14,8 @@ const { Waitlist } = require("./waitlist");
 const { Entitlements, FREE_MONTHLY_QUERY_LIMIT } = require("./entitlements");
 const { sendSlackAlert, extractHighSeverityEvents } = require("./alerts");
 const { Auth } = require("./auth");
-const circlePayments = require("./circlePayments");
-
+const agentPayments = require("./agentPayments");
+const { createUsdcCheckout, checkUsdcPayment } = require("./circleCheckout");
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB_NAME || "threatlens";
@@ -283,11 +283,11 @@ async function main() {
 
   // --- Circle USDC Autonomous Payment Engine Endpoints ---
   app.get("/api/circle/balance", (_req, res) => {
-    res.json(circlePayments.getWalletState());
+    res.json(agentPayments.getWalletState());
   });
 
   app.get("/api/circle/transactions", (_req, res) => {
-    res.json(circlePayments.getTransactions());
+    res.json(agentPayments.getTransactions());
   });
 
   app.post("/api/circle/pay", (req, res) => {
@@ -296,13 +296,62 @@ async function main() {
       return res.status(400).json({ error: "Request body must include `agent` string and `amount` number." });
     }
     try {
-      const result = circlePayments.processPayment(agent, amount, description);
+      const result = agentPayments.processPayment(agent, amount, description);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   });
 
+// --- Circle USDC Checkout (pay for a plan in USDC) ---
+app.post("/api/circle/checkout", requireAuth, async (req, res) => {
+  const { planId } = req.body || {};
+  if (!planId) return res.status(400).json({ error: "Body must include `planId`." });
+  try {
+    const session = await createUsdcCheckout(planId, req.userId);
+    res.json(session);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+app.get("/api/circle/checkout/:paymentId/status", requireAuth, async (req, res) => {
+  const { planId } = req.query;
+  const plan = PLANS[planId];
+  if (!plan) return res.status(400).json({ error: "Query must include a valid `planId`." });
+
+  try {
+    const result = await checkUsdcPayment(req.params.paymentId, plan.priceUsd);
+
+    if (result.paid) {
+      const subscriptionId = `circle_${req.params.paymentId}`;
+      await db.collection("subscriptions").updateOne(
+        { subscriptionId },
+        {
+          $set: {
+            planId,
+            planName: plan.name,
+            customerEmail: null,
+            status: "active",
+            method: "usdc",
+            txHash: result.txHash,
+          },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true }
+      );
+      await entitlements.setPlan(req.userId, {
+        planId,
+        planName: plan.name,
+        subscriptionId,
+      });
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
   // SOC2-flavored evidence export — Scaling Up only. Real audit data: every
   // tool call the agent made, when, for which client.
   app.get("/billing/evidence-export", requireAuth, async (req, res) => {
