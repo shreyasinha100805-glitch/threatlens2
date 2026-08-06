@@ -7,25 +7,24 @@ on:
     branches: [ main, master ]
 
 jobs:
-  backend-check:
-    name: Backend Build & Check
+  build-and-test:
+    name: ThreatLens CI (Backend & Frontend)
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    timeout-minutes: 10
 
-      - name: Setup Node.js
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: Install Backend Dependencies
+      - name: Install & Check Backend
         run: |
           cd backend
           npm ci || npm install
-
-      - name: Verify Backend Syntax
-        run: |
-          cd backend
           node --check index.js
           node --check agent.js
           node --check tools.js
@@ -39,24 +38,8 @@ jobs:
           node --check agentPayments.js
           node --check alerts.js
 
-  frontend-check:
-    name: Frontend Build & Typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install Frontend Dependencies
+      - name: Install & Build Frontend
         run: |
           cd frontend
           npm ci || npm install
-
-      - name: Build Frontend
-        run: |
-          cd frontend
           npm run build
-
