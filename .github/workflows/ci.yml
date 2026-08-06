@@ -20,6 +20,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Install & Check Backend
         run: |
@@ -37,9 +41,14 @@ jobs:
           node --check circleSetup.js
           node --check agentPayments.js
           node --check alerts.js
+          node --check entitlements.js
+          node --check logSchema.js
+          node --check seed.js
+          node --check waitlist.js
 
       - name: Install & Build Frontend
         run: |
           cd frontend
           npm ci || npm install
           npm run build
+
