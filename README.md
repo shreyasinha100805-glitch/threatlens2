@@ -12,7 +12,10 @@
 
 **ThreatLens** is an AI-powered conversational security copilot built specifically for pre-seed and seed-stage founders and engineering teams. It continuously monitors security telemetry, translates complex log data into plain English, provides 1-click incident mitigation, and supports autonomous USDC micropayments — powered by **Google Gemini API**, **MongoDB Atlas Vector Search**, and **Circle Developer-Controlled Wallets**.
 
+> 🏆 **Official XPRIZE Hackathon Compliance:** Complete rule mappings, financial revenue disclosures ($147.00 arms-length 3rd-party ARR), testing access, and judge permissions for `testing@devpost.com` & `judging@hacker.fund` are documented in [`HACKATHON_OFFICIAL_RULES_COMPLIANCE.md`](HACKATHON_OFFICIAL_RULES_COMPLIANCE.md), [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md), and [`Product_Evidence/Profit_Loss_Statement_ThreatLens.csv`](Product_Evidence/Profit_Loss_Statement_ThreatLens.csv).
+
 ---
+
 
 ## 🌟 Key Features & Capabilities
 
