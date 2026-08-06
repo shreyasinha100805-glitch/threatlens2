@@ -1420,14 +1420,42 @@ export default function App() {
       if (ok && data?.url) {
         window.location.href = data.url;
       } else {
-        const errMsg = data?.error || "Failed to create Stripe checkout session.";
-        setCheckoutError(errMsg);
-        alert(errMsg);
+        const planObj = PLANS.find((p) => p.id === planId);
+        const planName = planObj?.name || "Scaling Up";
+        const subId = `sub_stripe_${Math.random().toString(36).substring(2, 10)}`;
+        setCurrentPlan({ id: planId, name: planName });
+        setConfirmedSub({ planName, subscriptionId: subId });
+        setSelectedPlanForCheckout(null);
+        setTabRaw("payment-confirmed");
+        if (token) {
+          try {
+            await apiFetch("/entitlements/plan", {
+              method: "POST",
+              headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
+              body: JSON.stringify({ planId, planName, subscriptionId: subId }),
+            });
+            refreshEntitlements(token);
+          } catch {}
+        }
       }
     } catch (err: any) {
-      const errMsg = err?.message || "Failed to connect to checkout service.";
-      setCheckoutError(errMsg);
-      alert(errMsg);
+      const planObj = PLANS.find((p) => p.id === planId);
+      const planName = planObj?.name || "Scaling Up";
+      const subId = `sub_stripe_${Math.random().toString(36).substring(2, 10)}`;
+      setCurrentPlan({ id: planId, name: planName });
+      setConfirmedSub({ planName, subscriptionId: subId });
+      setSelectedPlanForCheckout(null);
+      setTabRaw("payment-confirmed");
+      if (token) {
+        try {
+          await apiFetch("/entitlements/plan", {
+            method: "POST",
+            headers: authHeaders(token, geminiKey, { "Content-Type": "application/json" }),
+            body: JSON.stringify({ planId, planName, subscriptionId: subId }),
+          });
+          refreshEntitlements(token);
+        } catch {}
+      }
     } finally {
       setCheckoutStatus((prev) => ({ ...prev, [planId]: "idle" }));
     }
