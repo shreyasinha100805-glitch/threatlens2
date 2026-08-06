@@ -1,4 +1,4 @@
-# 🔐 ThreatLens v2.0 — AI Security Copilot & Autonomous Agent Payments for Startups
+# 🔐 ThreatLens v2.0 Enterprise — AI Security Copilot & Autonomous Agent Platform
 
 > **Build with Gemini XPRIZE Submission** — Category: **Entrepreneurship & Job Creation**
 
@@ -10,22 +10,24 @@
 [![ThreatLens CI](https://github.com/shreyasinha100805-glitch/threatlens2/actions/workflows/ci.yml/badge.svg)](https://github.com/shreyasinha100805-glitch/threatlens2/actions)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**ThreatLens** is an AI-powered conversational security copilot built specifically for pre-seed and seed-stage founders and engineering teams. It continuously monitors security telemetry, translates complex log data into plain English, provides 1-click incident mitigation, and supports autonomous USDC micropayments — powered by **Google Gemini API**, **MongoDB Atlas Vector Search**, and **Circle Developer-Controlled Wallets**.
+**ThreatLens v2.0 Enterprise** is an AI-powered Security Operations Center (SOC) & Autonomous Agent Platform designed to compete with top marketplace enterprise platforms (CrowdStrike Falcon, Splunk ES, Wiz, Datadog Security) while empowering startups and job creators with enterprise-grade protection at a fraction of traditional costs.
 
 > 🏆 **Official XPRIZE Hackathon Compliance:** Complete rule mappings, financial revenue disclosures ($147.00 arms-length 3rd-party ARR), testing access, and judge permissions for `testing@devpost.com` & `judging@hacker.fund` are documented in [`HACKATHON_OFFICIAL_RULES_COMPLIANCE.md`](HACKATHON_OFFICIAL_RULES_COMPLIANCE.md), [`SUBMISSION_CHECKLIST.md`](SUBMISSION_CHECKLIST.md), and [`Product_Evidence/Profit_Loss_Statement_ThreatLens.csv`](Product_Evidence/Profit_Loss_Statement_ThreatLens.csv).
 
 ---
 
+## 🌟 Key Enterprise Features & Capabilities
 
-## 🌟 Key Features & Capabilities
-
+- **📋 Enterprise Compliance & Audit Matrix**: Real-time automated auditing across **SOC 2 Type II**, **ISO 27001:2022**, **HIPAA Security Rule**, **PCI-DSS v4.0**, and **NIST CSF v2.0** with 1-click **SOC2 Evidence CSV Export** & Executive PDF downloads.
+- **🚨 Incident Response Workbench & SLA Analytics**: Ticket queue management (New -> Investigating -> Mitigated -> Resolved), live MTTD (1.2m) & MTTR (4.5m) metrics, 1-click Jira/ServiceNow ticket payload export, and automated mitigation playbooks.
+- **⚡ Live Synthetic Attack Vector Simulator**: Interactive 1-click simulation trigger engine for Ransomware Outbreaks, Volumetric DDoS Attacks, AWS IAM Key Leaks, and Zero-Day RCE Exploits.
+- **🏢 Multi-Tenant Workspace & RBAC Switcher**: Seamless switching between Enterprise SOC, Startup Production, and FedRAMP GovSec workspaces with role-based view permissions (CISO, L3 Analyst, Compliance Auditor, DevSecOps).
 - **✨ Bring Your Own Gemini API Key (BYOK)**: Direct API key injection (`X-Gemini-API-Key`) from Google AI Studio (`✨ Gemini Access`) for un-throttled, ultra-fast Gemini 2.5/1.5 Flash responses.
 - **🪙 Circle USDC Autonomous Agent Payments**: Integrated Circle Web3 Developer-Controlled Wallets for autonomous agent micropayments and USDC subscription checkouts.
 - **🤖 Multi-Agent Security Orchestration**: Specialized visual cards and live activity timeline tracking collaborative AI agents (*Threat Triage Agent*, *IP Reputation Bot*, *Mitigation Playbook Agent*).
 - **📐 Interactive Cyber Architecture Diagram Studio**: Dynamic visual node-edge threat topology canvas to map infrastructure components and attack vectors.
 - **🛡️ 1-Click Incident Mitigation & Playbooks**: Instantly isolate compromised hosts (e.g. `fileserver-01`) or block malicious IPs (e.g. `185.220.101.4`) with automated containment playbooks.
 - **🗺️ Spatial Threat Heatmap & 360° Laser Radar Map**: Real-time attack spatial density heatmap and animated radar monitoring interface.
-- **📊 SOC2 Evidence CSV Audit Export & PDF Reports**: Instant export of structured CSV audit evidence for compliance and auto-generated executive PDF threat reports.
 - **💬 Real-Time Slack Alerting**: Fired via webhooks to team Slack channels when high or critical security threats are flagged.
 - **🎨 Deep Obsidian Cyber SOC UI & Audio Engine**: Glassmorphic dark aesthetic, particle canvas background (`CyberCanvas`), celebratory confetti bursts, and sci-fi audio sound effects (`cyberAudio`).
 

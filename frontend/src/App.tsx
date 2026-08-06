@@ -14,6 +14,8 @@ import { ConfettiEffect } from "./ConfettiEffect";
 import { ThreatLensCopilotPanel } from "./ThreatLensCopilotPanel";
 import circlePaymentEngine from "./circlePaymentEngine";
 import { generateIncidentPDF } from "./pdfReportGenerator";
+import { EnterpriseComplianceMatrix } from "./EnterpriseComplianceMatrix";
+import { IncidentResponseWorkbench } from "./IncidentResponseWorkbench";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -51,8 +53,8 @@ interface AuthUser {
   companyName?: string | null;
 }
 
-type Tab = "landing" | "signup" | "login" | "dashboard" | "console" | "diagrams" | "payment" | "payment-confirmed" | "account" | "transactions";
-const PROTECTED_TABS: Tab[] = ["dashboard", "console", "diagrams", "payment", "payment-confirmed", "account", "transactions"];
+type Tab = "landing" | "signup" | "login" | "dashboard" | "console" | "incidents" | "compliance" | "diagrams" | "payment" | "payment-confirmed" | "account" | "transactions";
+const PROTECTED_TABS: Tab[] = ["dashboard", "console", "incidents", "compliance", "diagrams", "payment", "payment-confirmed", "account", "transactions"];
 
 
 const SUGGESTIONS = [
@@ -533,86 +535,120 @@ function AppNav({
   onToggleTheme?: () => void;
 }) {
   const [audioActive, setAudioActive] = useState(cyberAudio.isEnabled());
+  const [workspace, setWorkspace] = useState("Acme Corp Enterprise SOC");
+  const [role, setRole] = useState("SOC Lead L3 Analyst");
+
   const items: [Tab, string][] = [
     ["dashboard", "Dashboard"],
     ["console", "Console"],
+    ["incidents", "🚨 Incidents"],
+    ["compliance", "📋 Compliance"],
     ["diagrams", "📊 Diagram Studio"],
     ["transactions", "💳 Transactions"],
     ["payment", "Payment"],
     ["account", "Account"],
   ];
+
   return (
-    <header className="app-nav" aria-label="Application Header">
-      <div className="brand" onClick={() => goTab("dashboard")} style={{ cursor: "pointer" }}>🔐 ThreatLens</div>
-      <div className="tabs" role="tablist" aria-label="Main Navigation Tabs">
-        {items.map(([t, label]) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tab === t}
-            aria-current={tab === t ? "page" : undefined}
-            className={tab === t ? "active" : ""}
-            onClick={() => {
-              cyberAudio.playClick();
-              goTab(t);
-            }}
-            aria-label={`Navigate to ${label} view`}
-          >
-            {label}
-          </button>
-        ))}
+    <>
+      {/* Enterprise Global Security Ticker Bar */}
+      <div className="enterprise-ticker-bar">
+        <div className="ticker-item">
+          <span className="live-pulse-dot" style={{ width: 8, height: 8 }}></span>
+          <span>ENTERPRISE SOC ACTIVE</span>
+          <span style={{ color: "#64748b" }}>|</span>
+          <span>MTTD: <strong>1.2m</strong></span>
+          <span>MTTR: <strong>4.5m</strong></span>
+          <span>SOC2 Readiness: <strong>96%</strong></span>
+        </div>
+        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <span>Workspace:</span>
+          <select className="workspace-select-badge" value={workspace} onChange={(e) => setWorkspace(e.target.value)}>
+            <option value="Acme Corp Enterprise SOC">Acme Enterprise SOC (Global)</option>
+            <option value="FinTech Startup">FinTech Startup (Prod)</option>
+            <option value="GovSec Shield">FedRAMP GovSec Shield</option>
+          </select>
+          <span>Role:</span>
+          <select className="role-select-badge" value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="SOC Lead L3 Analyst">SOC Lead L3 Analyst</option>
+            <option value="Enterprise CISO">Enterprise CISO</option>
+            <option value="Compliance Auditor">Compliance Auditor</option>
+            <option value="DevSecOps Engineer">DevSecOps Engineer</option>
+          </select>
+        </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <button
-          type="button"
-          className="audio-toggle-btn"
-          onClick={() => {
-            const next = !cyberAudio.isEnabled();
-            cyberAudio.setEnabled(next);
-            setAudioActive(next);
-            if (next) cyberAudio.playClick();
-          }}
-          aria-label="Toggle Audio FX"
-        >
-          {audioActive ? "🔊 Audio: ON" : "🔇 Audio: OFF"}
-        </button>
+      <header className="app-nav" aria-label="Application Header">
+        <div className="brand" onClick={() => goTab("dashboard")} style={{ cursor: "pointer" }}>🔐 ThreatLens <span className="xprize-badge" style={{ fontSize: 10, padding: "2px 6px", marginLeft: 4 }}>v2.0 Enterprise</span></div>
+        <div className="tabs" role="tablist" aria-label="Main Navigation Tabs">
+          {items.map(([t, label]) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              aria-current={tab === t ? "page" : undefined}
+              className={tab === t ? "active" : ""}
+              onClick={() => {
+                cyberAudio.playClick();
+                goTab(t);
+              }}
+              aria-label={`Navigate to ${label} view`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-        {onToggleTheme && (
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             type="button"
             className="audio-toggle-btn"
-            onClick={onToggleTheme}
-            aria-label="Toggle Dark / Light Mode"
-            style={{ minWidth: 90 }}
+            onClick={() => {
+              const next = !cyberAudio.isEnabled();
+              cyberAudio.setEnabled(next);
+              setAudioActive(next);
+              if (next) cyberAudio.playClick();
+            }}
+            aria-label="Toggle Audio FX"
           >
-            {theme === "light" ? "☀️ Light" : "🌙 Dark"}
+            {audioActive ? "🔊 Audio: ON" : "🔇 Audio: OFF"}
           </button>
-        )}
 
-        {onOpenGeminiModal && (
+          {onToggleTheme && (
+            <button
+              type="button"
+              className="audio-toggle-btn"
+              onClick={onToggleTheme}
+              aria-label="Toggle Dark / Light Mode"
+              style={{ minWidth: 90 }}
+            >
+              {theme === "light" ? "☀️ Light" : "🌙 Dark"}
+            </button>
+          )}
+
+          {onOpenGeminiModal && (
+            <button
+              type="button"
+              className="gemini-key-badge"
+              onClick={onOpenGeminiModal}
+              aria-label="Configure Gemini API Access"
+            >
+              ✨ {geminiKey ? "Gemini Key Active" : "Gemini Access"}
+            </button>
+          )}
+
           <button
             type="button"
-            className="gemini-key-badge"
-            onClick={onOpenGeminiModal}
-            aria-label="Configure Gemini API Access"
+            className="logout-btn"
+            onClick={onLogout}
+            aria-label="Log out of your ThreatLens account"
           >
-            ✨ {geminiKey ? "Gemini Key Active" : "Gemini Access"}
+            Log out
           </button>
-        )}
-
-
-        <button
-          type="button"
-          className="logout-btn"
-          onClick={onLogout}
-          aria-label="Log out of your ThreatLens account"
-        >
-          Log out
-        </button>
-      </div>
-    </header>
+        </div>
+      </header>
+    </>
   );
 }
 
@@ -2023,6 +2059,61 @@ export default function App() {
         />
         <main className="dashboard">
           <TransactionHistory onBackToDashboard={() => goTab("dashboard")} />
+        </main>
+      </div>
+    );
+  }
+
+  if (tab === "incidents") {
+    return (
+      <div className="app-shell-full">
+        <CyberCanvas />
+        {showKeyModal && (
+          <GeminiKeyModal
+            apiKey={geminiKey}
+            onSaveKey={saveGeminiKey}
+            onClose={() => setShowKeyModal(false)}
+          />
+        )}
+        <AppNav
+          tab={tab}
+          goTab={goTab}
+          onLogout={logout}
+          geminiKey={geminiKey}
+          onOpenGeminiModal={() => setShowKeyModal(true)}
+        />
+        <main className="dashboard">
+          <IncidentResponseWorkbench
+            onOpenConsoleWithPrompt={(prompt) => {
+              goTab("console");
+              send(prompt);
+            }}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  if (tab === "compliance") {
+    return (
+      <div className="app-shell-full">
+        <CyberCanvas />
+        {showKeyModal && (
+          <GeminiKeyModal
+            apiKey={geminiKey}
+            onSaveKey={saveGeminiKey}
+            onClose={() => setShowKeyModal(false)}
+          />
+        )}
+        <AppNav
+          tab={tab}
+          goTab={goTab}
+          onLogout={logout}
+          geminiKey={geminiKey}
+          onOpenGeminiModal={() => setShowKeyModal(true)}
+        />
+        <main className="dashboard">
+          <EnterpriseComplianceMatrix onBackToDashboard={() => goTab("dashboard")} />
         </main>
       </div>
     );

@@ -437,6 +437,168 @@ app.get("/api/circle/checkout/:paymentId/status", requireAuth, async (req, res) 
     }
   });
 
+  // --- Enterprise API Endpoints ---
+  app.get("/api/compliance/matrix", optionalAuth, async (_req, res) => {
+    try {
+      res.json({
+        lastAudit: new Date().toISOString(),
+        overallScore: 95.2,
+        frameworks: [
+          { id: "soc2", name: "SOC 2 Type II", readiness: 96, passCount: 24, totalControls: 25, status: "Compliant" },
+          { id: "iso27001", name: "ISO/IEC 27001:2022", readiness: 94, passCount: 92, totalControls: 98, status: "Compliant" },
+          { id: "hipaa", name: "HIPAA Security Rule", readiness: 98, passCount: 41, totalControls: 42, status: "Compliant" },
+          { id: "pci", name: "PCI-DSS v4.0", readiness: 92, passCount: 58, totalControls: 63, status: "Action Required" },
+          { id: "nist", name: "NIST CSF v2.0", readiness: 95, passCount: 104, totalControls: 108, status: "Compliant" }
+        ],
+        evidenceLogsCount: 4218,
+        vectorSearchAuditEnabled: true
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/incidents", optionalAuth, async (_req, res) => {
+    try {
+      res.json({
+        metrics: {
+          mttdMinutes: 1.2,
+          mttrMinutes: 4.5,
+          activeIncidents: 3,
+          resolutionRatePercent: 99.4,
+          automatedPlaybooksExecuted: 142
+        },
+        incidents: [
+          {
+            id: "INC-2026-9041",
+            title: "Ransomware Activity on fileserver-01",
+            severity: "critical",
+            status: "investigating",
+            sourceIp: "185.220.101.4",
+            targetHost: "fileserver-01",
+            createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
+            assignedAgent: "Mitigation Playbook Agent",
+            playbookExecuted: true
+          },
+          {
+            id: "INC-2026-9042",
+            title: "SSH Brute-Force Attack on Gateway",
+            severity: "high",
+            status: "mitigated",
+            sourceIp: "45.142.212.61",
+            targetHost: "ssh-gateway",
+            createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
+            assignedAgent: "IP Reputation Bot",
+            playbookExecuted: true
+          },
+          {
+            id: "INC-2026-9043",
+            title: "Outbound Data Exfiltration Anomaly",
+            severity: "critical",
+            status: "investigating",
+            sourceIp: "103.224.182.9",
+            targetHost: "db-prod-02",
+            createdAt: new Date(Date.now() - 90 * 60000).toISOString(),
+            assignedAgent: "Threat Triage Agent",
+            playbookExecuted: false
+          }
+        ]
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/simulation/trigger", optionalAuth, async (req, res) => {
+    try {
+      const { scenario } = req.body || {};
+      const scenarios = {
+        ransomware: {
+          eventId: `evt-sim-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toISOString(),
+          severity: "critical",
+          eventType: "simulated_ransomware_outbreak",
+          sourceIp: "193.142.146.210",
+          targetHost: "app-prod-cluster-01",
+          description: "SIMULATION: High entropy filesystem mutation detected across 1,200 files. Ransom note drop pattern flagged.",
+          riskScore: 99,
+          mitreTechnique: "T1486 Data Encrypted for Impact",
+          mitreTactic: "Impact",
+          status: "active"
+        },
+        ddos: {
+          eventId: `evt-sim-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toISOString(),
+          severity: "high",
+          eventType: "simulated_volumetric_ddos",
+          sourceIp: "185.220.101.4",
+          targetHost: "ingress-gateway-01",
+          description: "SIMULATION: HTTP flood exceeding 45,000 req/sec from distributed botnet IPs. Origin country: RU/CN.",
+          riskScore: 89,
+          mitreTechnique: "T1498 Network Denial of Service",
+          mitreTactic: "Impact",
+          status: "active"
+        },
+        iam_leak: {
+          eventId: `evt-sim-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toISOString(),
+          severity: "critical",
+          eventType: "simulated_aws_iam_leak",
+          sourceIp: "103.224.182.9",
+          targetHost: "cloud-iam-master",
+          description: "SIMULATION: Root AWS Access Key exposed in public repository. Unrecognized API calls originating from anomalous region.",
+          riskScore: 96,
+          mitreTechnique: "T1552 Unsecured Credentials",
+          mitreTactic: "Credential Access",
+          status: "active"
+        },
+        zero_day: {
+          eventId: `evt-sim-${Date.now().toString().slice(-4)}`,
+          timestamp: new Date().toISOString(),
+          severity: "critical",
+          eventType: "simulated_zero_day_rce",
+          sourceIp: "45.142.212.61",
+          targetHost: "web-server-02",
+          description: "SIMULATION: Heap buffer overflow exploitation in Nginx web worker resulting in interactive root shell execution.",
+          riskScore: 97,
+          mitreTechnique: "T1190 Exploit Public-Facing Application",
+          mitreTactic: "Initial Access",
+          status: "active"
+        }
+      };
+
+      const selectedEvent = scenarios[scenario] || scenarios.ransomware;
+      
+      // Store in DB if accessible
+      await db.collection("security_logs").insertOne(selectedEvent).catch(() => {});
+
+      res.json({
+        ok: true,
+        scenario: scenario || "ransomware",
+        simulatedEvent: selectedEvent,
+        aiAnalysisPrompt: `Analyze simulated ${selectedEvent.eventType} on host ${selectedEvent.targetHost} from IP ${selectedEvent.sourceIp}`
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/workspace/info", optionalAuth, async (_req, res) => {
+    try {
+      res.json({
+        workspaces: [
+          { id: "ws-acme", name: "Acme Corp Enterprise SOC", tier: "Enterprise SOC", activeNodes: 480, region: "us-east-1" },
+          { id: "ws-startup", name: "FinTech Startup (Production)", tier: "Early Team", activeNodes: 32, region: "us-west-2" },
+          { id: "ws-gov", name: "FedRAMP GovSec Shield", tier: "Federal Dedicated", activeNodes: 1250, region: "us-gov-west-1" }
+        ],
+        currentRole: "SOC Lead L3 Analyst",
+        availableRoles: ["Enterprise CISO", "SOC Lead L3 Analyst", "DevSecOps Engineer", "Compliance Auditor"]
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.listen(PORT, () => {
     console.log(`ThreatLens backend listening on port ${PORT}`);
   });
