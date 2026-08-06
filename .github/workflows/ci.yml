@@ -17,13 +17,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install Backend Dependencies
         run: |
           cd backend
-          npm ci
+          npm ci || npm install
 
       - name: Verify Backend Syntax
         run: |
@@ -31,6 +29,15 @@ jobs:
           node --check index.js
           node --check agent.js
           node --check tools.js
+          node --check mongoMCP.js
+          node --check genaiClient.js
+          node --check embedLogs.js
+          node --check auth.js
+          node --check billing.js
+          node --check circleCheckout.js
+          node --check circleSetup.js
+          node --check agentPayments.js
+          node --check alerts.js
 
   frontend-check:
     name: Frontend Build & Typecheck
@@ -42,15 +49,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm ci
+          npm ci || npm install
 
       - name: Build Frontend
         run: |
           cd frontend
           npm run build
+
