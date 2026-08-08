@@ -125,7 +125,7 @@ ThreatLens uses **Google Gemini API exclusively** for 100% of LLM operations.
 ---
 
 ### 16. URL to your GitHub repo code repository
-`https://github.com/<YOUR-GITHUB-USERNAME>/threatlens`
+`https://github.com/shreyasinha100805-glitch/threatlens2`
 
 *(Ensure repository visibility is either Public or Private with `testing@devpost.com` and `judging@hacker.fund` added as collaborators)*
 
@@ -233,6 +233,6 @@ Download the official XPRIZE P&L template at [https://bit.ly/4w3DvwL](https://bi
 
 ### 34. Agentic Economy Prize ($50K by Circle)
 - **Opt-in Selection**: `Yes`
-- **Public GitHub Repo Link**: `https://github.com/<YOUR-GITHUB-USERNAME>/threatlens`
+- **Public GitHub Repo Link**: `https://github.com/shreyasinha100805-glitch/threatlens2`
 - **Agent's Circle Wallet Address**: `0x742d35Cc6634C0532925a3b844Bc454e4438f44e`
 - **Clickable Block-Explorer URL**: `https://amoy.polygonscan.com/address/0x742d35Cc6634C0532925a3b844Bc454e4438f44e`
